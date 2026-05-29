@@ -554,17 +554,17 @@ function updateInventorySellUI() {
                         display:flex; justify-content:space-between; padding:8px; margin-bottom:4px; border-radius:4px; transition: 0.2s;" 
                  onclick="toggleInvItem('aura', ${a.id})">
                 <span style="font-weight:bold;">${isSelected ? '✅ ' : ''}★${a.r} 【${a.type}】</span>
-                <span style="color:#ff0;">${isSelected ? '売却確定' : '20枚'}</span>
+                <span style="color:#ff0;">${isSelected ? '売却確定' : '1枚'}</span>
             </div>`;
     });
 
     if (html === "") {
-        html = "<div style='text-align:center; color:#888; padding:20px;'>売却できるアイテムがありません</div>";
+        html = "<div style='text-align:center; color:#888; padding:1px;'>売却できるアイテムがありません</div>";
     }
 
     listContainer.innerHTML = html;
 
-    const total = (selectedInvAuraIds.length * 20) + (selectedInvWeaponIds.length * 30);
+    const total = (selectedInvAuraIds.length * 1) + (selectedInvWeaponIds.length * 1);
     const btn = document.getElementById('btn-execute-inv-sell');
     if(btn) {
         // 合計金額が見えやすいようにボタンも強調
@@ -576,7 +576,7 @@ function updateInventorySellUI() {
 }
 
 function executeInventorySell() {
-    const total = (selectedInvAuraIds.length * 20) + (selectedInvWeaponIds.length * 30);
+    const total = (selectedInvAuraIds.length * 1) + (selectedInvWeaponIds.length * 1);
     if (confirm("選択したアイテムを売却して、コインを " + total + " 枚獲得しますか？")) {
         auras = auras.filter(a => !selectedInvAuraIds.includes(a.id));
         weapons = weapons.filter(w => !selectedInvWeaponIds.includes(w.id));
