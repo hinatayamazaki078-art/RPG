@@ -154,6 +154,23 @@
             <button id="btn-retreat" class="exit-btn" style="display:none; margin-left:10px;" onclick="location.reload()">拠点に戻る</button>
         </div>
     </div>
+        <div id="view-inventory-sell" class="view">
+    <div class="view-header">
+        <button onclick="closeInventorySell()">戻る</button>
+        <div style="color:#ff0; font-weight:bold;">持ち物整理（売却）</div>
+    </div>
+    <div style="padding:10px; font-size:12px; color:#ccc; text-align:center;">
+        売却したい「霊気」や「装具」をタップして選択してください。<br>
+        <span style="color:#f55;">※装備中のアイテムは表示されません。</span>
+    </div>
+    <div id="inventory-sell-list" style="flex:1; overflow-y:auto; padding:10px; display:grid; grid-template-columns:1fr; gap:5px;">
+        </div>
+    <div id="inventory-sell-footer" style="padding:10px; border-top:1px solid #444; background:rgba(20,20,20,0.9);">
+        <button id="btn-execute-inv-sell" class="w-upgrade-btn" style="width:100%; height:50px; background:#400; border-color:#f55;" onclick="executeInventorySell()">
+            選択したアイテムを売却する
+        </button>
+    </div>
+</div>
 
     <div id="view-home" class="view active">
         <h2>深淵の拠点</h2>
@@ -174,7 +191,7 @@
         <div class="section-title">【所持している装具（武器）】</div>
         <div id="weapon-box" class="box-list" style="max-height: 130px; overflow-y: auto;"></div>
 
-        <div class="controls" style="grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(5, 1fr); height: 180px; margin-top: 10px; gap: 4px;">
+        <div class="controls" style="grid-template-columns: repeat(4, 1fr); grid-template-rows: auto; margin-top: 10px; gap: 4px;">
             <button id="btn-gacha-normal-single" class="gacha-btn" onclick="playGacha(1)">通常単発<span>(10枚)</span></button>
             <button class="gacha-btn" onclick="playGacha(10)">通常10連<span>(100枚)</span></button>
             <button class="gacha-btn" style="background:#402; border-color:#d0d;" onclick="playPremiumGacha(1)">上級単発<span>(100枚)</span></button>
@@ -182,14 +199,17 @@
             
             <button class="aura-btn" onclick="playAuraGacha()">霊気ガチャ<span>(30枚)</span></button>
             <button class="skill-gacha-btn" onclick="playSkillGacha()">スキルガチャ<span>(20枚)</span></button>
-            <button class="boss-btn" style="grid-column: span 2;" onclick="openBossSelection()">強者の間</button>
             
+            <button style="grid-column: span 2; background: #444; border-color: #f55; color: #fcc; font-size: 12px;" onclick="openInventorySell()">持ち物整理（売却）</button>
+            
+            <button class="boss-btn" style="grid-column: span 2;" onclick="openBossSelection()">強者の間</button>
             <button class="dig-btn" style="grid-column: span 2;" onclick="openDigSelection()">発掘開始</button>
+            
             <button style="grid-column: span 2; background: #135; border-color: #26a; font-size: 14px;" onclick="openManual()">説明書</button>
-
-            <button style="grid-column: span 1; background: #303; border-color: #a0a; color: #f0f; font-size: 12px;" onclick="uploadMyShadow()">影を刻む</button>
-            <button style="grid-column: span 1; background: #300; border-color: #f00; color: #f88; font-size: 12px;" onclick="deleteMyShadow()">影を削除</button>
             <button style="grid-column: span 2; background: #033; border-color: #0aa; color: #0ff;" onclick="openShadowList()">他者の影に挑む</button>
+
+            <button style="grid-column: span 2; background: #303; border-color: #a0a; color: #f0f; font-size: 12px;" onclick="uploadMyShadow()">影を刻む</button>
+            <button style="grid-column: span 2; background: #300; border-color: #f00; color: #f88; font-size: 12px;" onclick="deleteMyShadow()">影を削除</button>
             
             <button id="btn-start" style="grid-column: span 4;" onclick="openStageSelection()">戦場出撃</button>
         </div>
@@ -463,7 +483,87 @@ function loadData() {
     } return false;
 }
 
+// --- 売却機能のプログラム（ここから） ---
+let selectedInvAuraIds = [];
+let selectedInvWeaponIds = [];
+
+function openInventorySell() {
+    selectedInvAuraIds = [];
+    selectedInvWeaponIds = [];
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-inventory-sell').classList.add('active');
+    updateInventorySellUI();
+}
+
+function closeInventorySell() {
+    document.getElementById('view-inventory-sell').classList.remove('active');
+    document.getElementById('view-home').classList.add('active');
+}
+
+function toggleInvItem(type, id) {
+    if (type === 'aura') {
+        if (selectedInvAuraIds.includes(id)) {
+            selectedInvAuraIds = selectedInvAuraIds.filter(i => i !== id);
+        } else {
+            selectedInvAuraIds.push(id);
+        }
+    } else {
+        if (selectedInvWeaponIds.includes(id)) {
+            selectedInvWeaponIds = selectedInvWeaponIds.filter(i => i !== id);
+        } else {
+            selectedInvWeaponIds.push(id);
+        }
+    }
+    updateInventorySellUI();
+}
+
+function updateInventorySellUI() {
+    const listContainer = document.getElementById('inventory-sell-list');
+    if(!listContainer) return;
+
+    const equippedAuraIds = box.flatMap(b => b.auraIds || []);
+    const equippedWeaponIds = box.map(b => b.weaponId).filter(id => id !== null);
+
+    const freeAuras = auras.filter(a => !equippedAuraIds.includes(a.id));
+    const freeWeapons = weapons.filter(w => !equippedWeaponIds.includes(w.id));
+
+    let html = "";
+    freeWeapons.forEach(w => {
+        const isSelected = selectedInvWeaponIds.includes(w.id);
+        html += `<div class="seed-item ${isSelected ? 'selected' : ''}" style="border-color:${isSelected ? '#ff0' : '#444'}; color:#0ff; display:flex; justify-content:space-between; padding:8px; border:1px solid; margin-bottom:4px; background:#111;" onclick="toggleInvItem('weapon', ${w.id})"><span>⚔️ ${w.name}</span><span style="color:#ff0;">30枚</span></div>`;
+    });
+    freeAuras.forEach(a => {
+        const isSelected = selectedInvAuraIds.includes(a.id);
+        html += `<div class="seed-item ${isSelected ? 'selected' : ''}" style="border-color:${isSelected ? '#ff0' : '#444'}; color:#0ff; display:flex; justify-content:space-between; padding:8px; border:1px solid; margin-bottom:4px; background:#111;" onclick="toggleInvItem('aura', ${a.id})"><span>★${a.r} 【${a.type}】(${a.text})</span><span style="color:#ff0;">20枚</span></div>`;
+    });
+
+    if (html === "") html = "<div style='text-align:center; color:#888; padding:20px;'>売却できるアイテムがありません</div>";
+    listContainer.innerHTML = html;
+
+    const total = (selectedInvAuraIds.length * 20) + (selectedInvWeaponIds.length * 30);
+    const btn = document.getElementById('btn-execute-inv-sell');
+    if(btn) {
+        btn.innerHTML = total > 0 ? `選択したアイテムを売却（${total}枚獲得）` : "アイテムを選択してください";
+        btn.disabled = total === 0;
+    }
+}
+
+function executeInventorySell() {
+    const total = (selectedInvAuraIds.length * 20) + (selectedInvWeaponIds.length * 30);
+    if (confirm("選択したアイテムを売却して、コインを " + total + " 枚獲得しますか？")) {
+        auras = auras.filter(a => !selectedInvAuraIds.includes(a.id));
+        weapons = weapons.filter(w => !selectedInvWeaponIds.includes(w.id));
+        coins += total;
+        saveData(); 
+        alert("整理完了！ " + total + "枚のコインを獲得しました。");
+        closeInventorySell(); 
+        updateHomeUI(); 
+    }
+}
+// --- 売却機能のプログラム（ここまで） ---
+    
 function updateHomeUI() {
+    
     normalizeBoxData();
     document.getElementById('global-coin-count').innerText = coins;
     document.getElementById('global-stone-count').innerText = stones;
