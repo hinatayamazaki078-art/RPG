@@ -423,6 +423,19 @@ function normalizeBoxData() {
     });
 }
 
+function changeName() {
+    const nameElement = document.getElementById('player-name');
+    const currentName = nameElement.innerText;
+    
+    // プロンプトを表示して名前を入力させる
+    const inputName = prompt("名前を入力してください", currentName !== "名もなき者" ? currentName : "");
+    
+    // 入力がキャンセルされず、空白でもない場合に反映
+    if (inputName !== null && inputName.trim() !== "") {
+        nameElement.innerText = inputName.trim();
+        saveData(); // 名前を変更したら保存する
+    }
+}    
 function saveData() { 
     normalizeBoxData();
     localStorage.setItem('kanji_rpg_v2_data', JSON.stringify({ coins, stones, box, selectedIds, seeds, auras, weapons, maxClearedStage, isFirstGachaFree })); 
