@@ -1619,7 +1619,35 @@ function changeName() {
   }
 }
 
-// --- ここまで --- 
+// --- ここまで ---
+    function changeName() {
+    // ユーザーに新しい名前を入力してもらうプロンプトを表示
+    const newName = prompt("名前を入力してください（10文字以内）", "名もなき者");
+    
+    // キャンセルされた場合や空文字の場合は何もしない
+    if (newName !== null && newName.trim() !== "") {
+        // 10文字までに制限
+        const finalName = newName.trim().substring(0, 10);
+        
+        // 画面上の表示を更新
+        const nameElement = document.getElementById('player-name');
+        if (nameElement) {
+            nameElement.innerText = finalName;
+        }
+        
+        // 必要であれば、この名前をlocalStorageに保存して次回以降も保持できるようにする
+        localStorage.setItem('player_name', finalName);
+    }
+}
+
+// ページ読み込み時に保存された名前があれば反映する処理（初期化時に実行）
+window.addEventListener('DOMContentLoaded', () => {
+    const savedName = localStorage.getItem('player_name');
+    if (savedName) {
+        const nameElement = document.getElementById('player-name');
+        if (nameElement) nameElement.innerText = savedName;
+    }
+});
 </script>
 </body>
 </html>
