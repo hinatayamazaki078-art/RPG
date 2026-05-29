@@ -478,18 +478,28 @@ function loadData() {
     if (saved) {
         const d = JSON.parse(saved);
         
-        // ...（他の読み込み処理）...
-        
-        // 読み込みにレベルと経験値を足します（データがない時は初期値 1 と 0 になります）
+        // --- ここで保存されていたデータを各変数に戻しています ---
+        if (d.coins !== undefined) coins = d.coins;
+        if (d.stones !== undefined) stones = d.stones;
+        if (d.box) box = d.box;
+        if (d.selectedIds) selectedIds = d.selectedIds;
+        if (d.seeds) seeds = d.seeds;
+        if (d.auras) auras = d.auras;
+        if (d.weapons) weapons = d.weapons;
+        if (d.maxClearedStage !== undefined) maxClearedStage = d.maxClearedStage;
+        if (d.isFirstGachaFree !== undefined) isFirstGachaFree = d.isFirstGachaFree;
+
+        // --- 今回追加したレベルと経験値 ---
         playerLevel = d.playerLevel || 1;
         playerExp = d.playerExp || 0;
         
-        // 名前を画面に反映
+        // 名前の反映
         if (d.playerName) {
-            document.getElementById('player-name').innerText = d.playerName;
+            const nameElement = document.getElementById('player-name');
+            if (nameElement) nameElement.innerText = d.playerName;
         }
         
-        // 読み込んだ後に画面表示を更新する
+        // 読み込みが終わったら画面を更新
         updateHomeUI();
     }
 }
