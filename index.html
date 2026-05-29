@@ -509,7 +509,6 @@ function updateHomeUI() {
         return `<div class="box-item aura-item" style="opacity: ${owner ? 0.6 : 1}">
             <span class="rarity">${'★'.repeat(a.r)}</span><div class="aura-type">${a.type}</div>
             <div class="aura-effect">${a.text}</div>${ownerText}
-            ${!owner ? `<button onclick="sellAura(${a.id}, event)" style="position:absolute; top:2px; right:2px; font-size:8px; background:#500; color:#fff; border:1px solid #f00; padding:1px 3px; border-radius:2px; z-index:10;">売却</button>` : ''}
         </div>`;
     }).join('');
 
@@ -533,76 +532,6 @@ function updateHomeUI() {
         const bonus = getWeaponBonus(w.name);
         return `<div class="box-item weapon-box-item" style="opacity: ${owner ? 0.6 : 1}" onclick="equipWeaponFromHome(${i})">
             <div class="weapon-box-title">${w.name}</div><div class="weapon-box-effect">攻撃+${bonus}</div>${ownerText}
-            ${!owner ? `<button onclick="sellWeapon(${w.id}, event)" style="position:absolute; top:2px; right:2px; font-size:8px; background:#500; color:#fff; border:1px solid #f00; padding:1px 3px; border-radius:2px; z-index:10;">売却</button>` : ''}
-        </div>`;
-    }).join('');
-
-    document.getElementById('btn-start').disabled = !selectedIds.length;
-    document.getElementById('btn-sell-unit').disabled = selectedIds.length === 0;
-}
-
-    document.getElementById('my-box').innerHTML = box.map(c => {
-        let auraLabels = (c.auraIds || []).map(aid => {
-            const au = auras.find(a => a.id === aid);
-            return au ? au.type : "";
-        }).filter(Boolean).join("/");
-        let auraBadge = auraLabels ? `<span class="equipped-badge" style="max-width:65px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${auraLabels}</span>` : "";
-        
-        let weaponBadge = ""; if (c.weaponId) {
-            const wp = weapons.find(w => w.id === c.weaponId);
-            if (wp) {
-                let label = "剣";
-                if (wp.name.includes("+")) label = wp.name.split("の剣")[1] || "剣";
-                else if (wp.name === "鋼の剣+5") label = "+5";
-                else if (wp.name === "デスペラードソード") label = "絶望";
-                else if (wp.name === "真・デスペラードソード") label = "真絶";
-                else if (wp.name === "鋼の剣") label = "鋼"; else if (wp.name === "硝子の剣") label = "硝子";
-                else if (wp.name === "鉄の剣") label = "鉄";
-                else if (wp.name === "グレイデンの剣") label = "グレ";
-                else if (wp.name === "真・グレイデンの剣") label = "真グ";
-                else if (wp.name === "闇の剣") label = "闇"; else if (wp.name === "閃光の剣") label = "閃光"; else if (wp.name === "錆びた剣") label = "錆";
-                weaponBadge = `<span class="weapon-badge">${label}</span>`;
-            }
-        }
-        return `<div class="box-item ${selectedIds.includes(c.id)?'selected':''}" onclick="toggleSelect(${c.id})" ondblclick="openShop(${c.id})">
-            <span class="rarity">${'★'.repeat(c.r || 1)}</span>
-            <span style="font-size:${c.name.length >= 4 ? '11px' : '20px'}; display:block; width:100%; white-space:nowrap; overflow:hidden;">${c.name}</span>
-            ${auraBadge}${weaponBadge}<span class="shop-hint">修練</span>
-        </div>`;
-    }).join('');
-        
-    document.getElementById('aura-box').innerHTML = auras.map(a => {
-        const owner = box.find(b => (b.auraIds || []).includes(a.id));
-        const ownerText = owner ? `<div style="font-size:7px; color:#f0f; margin-top:2px;">装着:${owner.name}</div>` : `<div style="font-size:7px; color:#0f0; margin-top:2px;">未装着</div>`;
-        return `<div class="box-item aura-item" style="opacity: ${owner ? 0.6 : 1}">
-            <span class="rarity">${'★'.repeat(a.r)}</span><div class="aura-type">${a.type}</div>
-            <div class="aura-effect">${a.text}</div>${ownerText}
-        </div>`;
-    }).join('');
-
-    const seedBox = document.getElementById('seed-box');
-    if (seeds.length === 0) seedBox.innerHTML = `<div style="grid-column: span 4; color: #555; text-align: center; font-size: 11px; padding-top: 15px;">種はありません</div>`;
-    else seedBox.innerHTML = seeds.map((s, i) => {
-        let costLabel = "消費MP:" + (s.cost||1);
-        if(s.name==='捨て身') costLabel = "消費HP:5";
-        if(s.name==='精霊の歌') costLabel = "HP半減";
-        return `<div class="box-item seed-box-item" onclick="attachSeedFromHome(${i})">
-            <div class="seed-box-title" style="white-space:nowrap; overflow:hidden; width:100%; text-overflow:ellipsis;">${s.name}の種</div>
-            <div class="seed-box-cost">${costLabel}</div>
-        </div>`;
-    }).join('');
-
-    const weaponBox = document.getElementById('weapon-box');
-    if (weapons.length === 0) weaponBox.innerHTML = `<div style="grid-column: span 4; color: #555; text-align: center; font-size: 11px; padding-top: 15px;">装具はありません</div>`;
-   const weaponBox = document.getElementById('weapon-box');
-    if (weapons.length === 0) weaponBox.innerHTML = `<div style="grid-column: span 4; color: #555; text-align: center; font-size: 11px; padding-top: 15px;">装具はありません</div>`;
-    else weaponBox.innerHTML = weapons.map((w, i) => {
-        const owner = box.find(b => b.weaponId === w.id);
-        const ownerText = owner ? `<div style="font-size:7px; color:#f0f; margin-top:1px;">装備:${owner.name}</div>` : `<div style="font-size:7px; color:#0f0; margin-top:1px;">未装備</div>`;
-        const bonus = getWeaponBonus(w.name);
-        return `<div class="box-item weapon-box-item" style="opacity: ${owner ? 0.6 : 1}" onclick="equipWeaponFromHome(${i})">
-            <div class="weapon-box-title">${w.name}</div><div class="weapon-box-effect">攻撃+${bonus}</div>${ownerText}
-            ${!owner ? `<button onclick="sellWeapon(${w.id}, event)" style="position:absolute; top:2px; right:2px; font-size:8px; background:#500; color:#fff; border:1px solid #f00; padding:1px 3px; border-radius:2px; z-index:10;">売却</button>` : ''}
         </div>`;
     }).join('');
 
@@ -1395,36 +1324,6 @@ function executeAction(u, t, type, skillName = null) {
     next();
 }
 
-    // ▼▼▼ 武器と霊気の売却関数を追加 ▼▼▼
-function sellAura(id, event) {
-    event.stopPropagation(); // クリックしたときに別の処理が暴発するのを防ぐ
-    const targetIndex = auras.findIndex(a => a.id === id);
-    if (targetIndex === -1) return;
-    
-    const aura = auras[targetIndex];
-    if (confirm(`【${aura.type}】(★${aura.r}) を売却して 3コイン 獲得しますか？`)) {
-        auras.splice(targetIndex, 1);
-        coins += 3;
-        saveData();
-        updateHomeUI();
-    }
-}
-
-function sellWeapon(id, event) {
-    event.stopPropagation(); // 装備処理の暴発を防ぐ
-    const targetIndex = weapons.findIndex(w => w.id === id);
-    if (targetIndex === -1) return;
-    
-    const weapon = weapons[targetIndex];
-    if (confirm(`【${weapon.name}】 を売却して 1コイン 獲得しますか？`)) {
-        weapons.splice(targetIndex, 1);
-        coins += 1;
-        saveData();
-        updateHomeUI();
-    }
-}
-// ▲▲▲ 追加ここまで ▲▲▲
-
 function next() {
     updateUI();
     if (enemies.every(e => e.curH <= 0)) { 
@@ -1506,43 +1405,7 @@ function addLog(msg) {
     const l = document.getElementById('log'); l.innerHTML += `<div>${msg}</div>`; l.scrollTop = l.scrollHeight;
 }
 
-// ▼▼▼ 武器と霊気の売却関数 ▼▼▼
-function sellAura(id, event) {
-    event.stopPropagation();
-    const targetIndex = auras.findIndex(a => a.id === id);
-    if (targetIndex === -1) return;
-    
-    const aura = auras[targetIndex];
-    if (confirm(`【${aura.type}】(★${aura.r}) を売却して 3コイン 獲得しますか？`)) {
-        auras.splice(targetIndex, 1);
-        coins += 3;
-        saveData();
-        updateHomeUI();
-    }
-}
-
-function sellWeapon(id, event) {
-    event.stopPropagation();
-    const targetIndex = weapons.findIndex(w => w.id === id);
-    if (targetIndex === -1) return;
-    
-    const weapon = weapons[targetIndex];
-    if (confirm(`【${weapon.name}】 を売却して 1コイン 獲得しますか？`)) {
-        weapons.splice(targetIndex, 1);
-        coins += 1;
-        saveData();
-        updateHomeUI();
-    }
-}
-
 window.onload = () => {
-    if (!loadData()) {
-        box = [];
-        coins = 1500; stones = 15;
-        saveData();
-    }
-    updateHomeUI();
-};
     if (!loadData()) {
         box = [];
         coins = 1500; stones = 15;
@@ -1759,7 +1622,23 @@ window.addEventListener('load', function() {
 function closeIntro() {
     document.getElementById('intro-overlay').style.display = 'none';
 }
-   
+   // --- ここから下に追記 ---
+
+function changeName() {
+  // プレイヤーに名前を入力してもらう
+  let input = prompt("名前を入力してください:", "名もなき者");
+  
+  // 入力がキャンセルされず、空欄でなければ更新する
+  if (input !== null && input !== "") {
+    // 画面上の表示を更新
+    document.getElementById("player-name").innerText = input;
+    
+    // もしプレイヤーデータを保存しているなら、ここで更新する（該当なければ削除可）
+    // player.name = input;
+    // saveGame(); // セーブ関数がある場合
+  }
+}
+
 
 </script>
 </body>
