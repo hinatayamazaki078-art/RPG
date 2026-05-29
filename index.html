@@ -438,7 +438,8 @@ function changeName() {
 }    
 function saveData() { 
     normalizeBoxData();
-    localStorage.setItem('kanji_rpg_v2_data', JSON.stringify({ coins, stones, box, selectedIds, seeds, auras, weapons, maxClearedStage, isFirstGachaFree })); 
+    const playerName = document.getElementById('player-name').innerText;
+    localStorage.setItem('kanji_rpg_v2_data', JSON.stringify({ coins, stones, box, selectedIds, seeds, auras, weapons, maxClearedStage, isFirstGachaFree, playerName })); 
 }
 
 function loadData() {
@@ -451,6 +452,12 @@ function loadData() {
         seeds = d.seeds || []; auras = d.auras || []; weapons = d.weapons || []; 
         maxClearedStage = d.maxClearedStage || 0; 
         isFirstGachaFree = d.isFirstGachaFree !== undefined ? d.isFirstGachaFree : true;
+        
+        // 保存された名前があれば反映する
+        if (d.playerName) {
+            document.getElementById('player-name').innerText = d.playerName;
+        }
+        
         normalizeBoxData();
         return true;
     } return false;
@@ -1632,35 +1639,7 @@ function changeName() {
   }
 }
 
-// --- ここまで ---
-    function changeName() {
-    // ユーザーに新しい名前を入力してもらうプロンプトを表示
-    const newName = prompt("名前を入力してください（10文字以内）", "名もなき者");
-    
-    // キャンセルされた場合や空文字の場合は何もしない
-    if (newName !== null && newName.trim() !== "") {
-        // 10文字までに制限
-        const finalName = newName.trim().substring(0, 10);
-        
-        // 画面上の表示を更新
-        const nameElement = document.getElementById('player-name');
-        if (nameElement) {
-            nameElement.innerText = finalName;
-        }
-        
-        // 必要であれば、この名前をlocalStorageに保存して次回以降も保持できるようにする
-        localStorage.setItem('player_name', finalName);
-    }
-}
 
-// ページ読み込み時に保存された名前があれば反映する処理（初期化時に実行）
-window.addEventListener('DOMContentLoaded', () => {
-    const savedName = localStorage.getItem('player_name');
-    if (savedName) {
-        const nameElement = document.getElementById('player-name');
-        if (nameElement) nameElement.innerText = savedName;
-    }
-});
 </script>
 </body>
 </html>
