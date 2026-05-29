@@ -171,10 +171,17 @@
         <div class="section-title">【抽出・獲得したスキルの種】</div>
         <div id="seed-box" class="box-list" style="max-height: 130px; overflow-y: auto;"></div>
 
-      <div class="section-title">【所持している装具（武器）】</div>
+      <div class="section-title">【所持している装具（武器）】</div><button id="toggle-sell-mode" onclick="toggleSellMode()" style="font-size: 8px; margin-left: 10px; cursor: pointer;">［通常モード］</button>
 <div id="weapon-box" class="box-list" style="max-height: 130px; overflow-y: auto;"></div>
 <div class="sell-btn-area">
     <button id="btn-sell-weapon" class="sell-action-btn" onclick="sellSelectedWeapons()" disabled>選択した装具をまとめて売却（換金）</button>
+</div>
+        <div class="sell-btn-area">
+    <button id="btn-sell-aura" class="sell-action-btn" onclick="sellSelectedItems('aura')" disabled>選択した霊気を売却</button>
+</div>
+
+<div class="sell-btn-area">
+    <button id="btn-sell-weapon" class="sell-action-btn" onclick="sellSelectedItems('weapon')" disabled>選択した装具を売却</button>
 </div>
         <div class="controls" style="grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(5, 1fr); height: 180px; margin-top: 10px; gap: 4px;">
             <button id="btn-gacha-normal-single" class="gacha-btn" onclick="playGacha(1)">通常単発<span>(10枚)</span></button>
@@ -280,27 +287,32 @@
 </div>
 
 <script>
-    // ★追加：武器売却関数
+   // ★完成版：武器売却関数
 function sellSelectedWeapons() {
-    // 選択されている武器アイテムを探す (クラス名などで判定)
+    // 選択されている武器アイテムを探す
     const selectedItems = document.querySelectorAll('#weapon-box .box-item.selected');
     if (selectedItems.length === 0) return;
 
-    // 売却金額（例として1個50枚とする）
+    // 売却金額
     const sellPrice = 1; 
     let totalGain = selectedItems.length * sellPrice;
 
     // 所持金に加算
     globalCoinCount += totalGain;
-    updateGlobalInfo(); // 所持金表示を更新する既存関数
+    
+    // UIを更新（所持金表示の更新関数名が不明な場合は updateGlobalInfo を適切に変えてください）
+    updateGlobalInfo(); 
 
-    // リストから削除（データ構造に合わせて適宜修正してください）
+    // リストから削除
     selectedItems.forEach(item => {
         item.remove();
     });
 
-    // ボタンの無効化
-    document.getElementById('btn-sell-weapon').disabled = true;
+    // 売却ボタンを再度無効化する
+    const sellBtn = document.getElementById('btn-sell-weapon');
+    if (sellBtn) {
+        sellBtn.disabled = true;
+    }
     
     alert(totalGain + " 枚の金を手に入れた！");
 }
@@ -335,6 +347,45 @@ const charData = [
     { name: '宿灘', r: 7, p: 45, h: 50, m: 20, s: 12, skill: "伏魔御廚子", cost: 20 },
     { name: 'サイタマ', r: 7, p: 60, h: 50, m: 15, s: 20, skill: "マジ殴り", cost: 40 }
 ];
+    // 売却モード管理
+let isSellMode = false;
+
+// 売却ボタンの状態更新
+function updateSellButtonState(type) {
+    const selected = document.querySelectorAll(`#${type}-box .box-item.selected`);
+    const btn = document.getElementById(`btn-sell-${type}`);
+    if (btn) btn.disabled = selected.length === 0;
+}
+
+// 共通売却関数
+function sellSelectedItems(type) {
+    const selectedItems = document.querySelectorAll(`#${type}-box .box-item.selected`);
+    if (selectedItems.length === 0) return;
+
+    let sellPrice = (type === 'weapon') ? 50 : 30; // 武器50、オーラ30とする例
+    let totalGain = selectedItems.length * sellPrice;
+
+    // 所持金加算とUI更新
+    globalCoinCount += totalGain;
+    updateGlobalInfo(); // 既存の表示更新関数
+
+    selectedItems.forEach(item => item.remove());
+    updateSellButtonState(type);
+    
+    alert(`${totalGain}枚の金を手に入れた！`);
+}
+
+// タップ時の挙動（既存のタップ処理を以下のように分岐させる必要があります）
+// 既存の装備用タップ関数（例：item.onclick = ... の中身）に以下を組み込みます
+function onItemTap(element, type) {
+    if (isSellMode) {
+        element.classList.toggle('selected');
+        updateSellButtonState(type);
+    } else {
+        // 通常の装備処理（元々の挙動）
+        executeOriginalEquipLogic(element);
+    }
+}
 
 const SKILL_DATA = {
     "回復": { cost: 3 }, "閃光": { cost: 1 }, "斬撃": { cost: 2 }, "ムチ": { cost: 4 },
@@ -1664,7 +1715,39 @@ function changeName() {
     // saveGame(); // セーブ関数がある場合
   }
 }
+// 【追加】売却モード管理
+let isSellMode = false;
 
+// 【追加】モード切り替えボタンの処理
+function toggleSellMode() {
+    isSellMode = !isSellMode;
+    const btn = document.getElementById('toggle-sell-mode');
+    if(btn) {
+        btn.innerText = isSellMode ? "［売却モード：タップで選択］" : "［通常モード］";
+        btn.style.borderColor = isSellMode ? "#f00" : "#fff";
+    }
+    // モード切り替え時に選択を全解除
+    document.querySelectorAll('.box-item.selected').forEach(el => el.classList.remove('selected'));
+    // 売却ボタンの初期化（idが btn-sell-weapon と btn-sell-aura の場合）
+    const wBtn = document.getElementById('btn-sell-weapon');
+    const aBtn = document.getElementById('btn-sell-aura');
+    if(wBtn) wBtn.disabled = true;
+    if(aBtn) aBtn.disabled = true;
+}
+
+// 【追加】タップ時の振り分け関数
+function onItemTap(element, itemType, itemData) {
+    if (isSellMode) {
+        element.classList.toggle('selected');
+        // ボタンの有効・無効を更新
+        const btn = document.getElementById(`btn-sell-${itemType}`);
+        const selected = document.querySelectorAll(`#${itemType}-box .box-item.selected`);
+        if(btn) btn.disabled = selected.length === 0;
+    } else {
+        // 元々の装備処理（equipItem 関数などが何であるか確認してください）
+        equipItem(itemData);
+    }
+}
 
 </script>
 </body>
