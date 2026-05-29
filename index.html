@@ -1029,7 +1029,46 @@ window.addEventListener('load', () => {
 });
 
 // 説明書の表示などは既存のコードをそのまま維持...
-// (※お手元の元ファイルにある残りの関数等をここに繋げてください)
+const introOverlay = document.getElementById('intro-overlay');
+    const introText = document.getElementById('intro-text');
+
+    // localStorageに 'hasVisited' という記録があるかチェック
+    if (!localStorage.getItem('hasVisited')) {
+        // 記録がない ＝【初回起動】の場合
+        introText.innerText = '『ようこそ、文字に支配された世界へ。俺たちの目標はラスボスを倒すこと・・・あと、最強になって支配することだ。・・・まあ、頑張れや。』';
+        
+        // 初回訪問の記録をつける（次回から2回目以降の判定になる）
+        localStorage.setItem('hasVisited', 'true');
+    } else {
+        // 記録がある ＝【2回目以降】の場合
+        introText.innerText = '『おかえり相棒・・・。』';
+    }
+
+    // 案内人の画面を表示する
+    introOverlay.style.display = 'flex';
+});
+
+// ボタンを押して画面を閉じる処理（すでにあれば不要です）
+function closeIntro() {
+    document.getElementById('intro-overlay').style.display = 'none';
+}
+   // --- ここから下に追記 ---
+
+function changeName() {
+  // プレイヤーに名前を入力してもらう
+  let input = prompt("名前を入力してください:", "名もなき者");
+  
+  // 入力がキャンセルされず、空欄でなければ更新する
+  if (input !== null && input !== "") {
+    // 画面上の表示を更新
+    document.getElementById("player-name").innerText = input;
+    
+    // もしプレイヤーデータを保存しているなら、ここで更新する（該当なければ削除可）
+    // player.name = input;
+    // saveGame(); // セーブ関数がある場合
+  }
+}
+
 
 </script>
 </body>
