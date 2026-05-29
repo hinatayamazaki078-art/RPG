@@ -122,10 +122,6 @@
     <div id="player-profile" style="display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #333; margin-bottom: 5px; cursor: pointer;" onclick="changeName()">
     <div id="player-icon" style="...">👤</div>
     <div id="player-name" style="font-size: 16px; color: #fff;">名もなき者</div>
-<div id="player-level-container" style="margin-left: 10px; font-size: 14px; color: #ff0;">
-    Lv.<span id="player-level">1</span> 
-    <span id="player-exp-text" style="font-size: 10px; color: #aaa; margin-left: 5px;">(0/10)</span>
-</div>
 </div>
    <!-- display: none; にしておきます -->
 <div id="intro-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.70); z-index: 1000; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box; padding: 20px;">
@@ -413,9 +409,7 @@ let maxClearedStage = 0, currentEndStage = 50;
 let party = [], enemies = [], stage = 1, queue = [], qIdx = 0, isSelecting = false, currentAction = null, remainingActions = 0; 
 let darumaTrigger = null; 
 let isGlobalDomination = false;
-let selectedBattleSkill = null;
-    let playerLevel = 1;
-    let playerExp = 0;
+let selectedBattleSkill = null; 
 
 // スキル並び替え用変数
 let dragSrcIdx = null;
@@ -464,45 +458,30 @@ function changeName() {
 function saveData() { 
     normalizeBoxData();
     const playerName = document.getElementById('player-name').innerText;
-    
-    // 保存する中身に「playerLevel」と「playerExp」を足しました！
-    localStorage.setItem('kanji_rpg_v2_data', JSON.stringify({ 
-        coins, stones, box, selectedIds, seeds, auras, weapons, 
-        maxClearedStage, isFirstGachaFree, playerName,
-        playerLevel, playerExp // ← ここに追加
-    })); 
+    localStorage.setItem('kanji_rpg_v2_data', JSON.stringify({ coins, stones, box, selectedIds, seeds, auras, weapons, maxClearedStage, isFirstGachaFree, playerName })); 
 }
 
 function loadData() {
     const saved = localStorage.getItem('kanji_rpg_v2_data');
     if (saved) {
         const d = JSON.parse(saved);
+        box = (d.box || []).filter(c => c && c.name);
+        coins = d.coins || 0; stones = d.stones || 0;
+        selectedIds = (d.selectedIds || []).filter(sid => box.some(b => b.id === sid));
+        seeds = d.seeds || []; auras = d.auras || []; weapons = d.weapons || []; 
+        maxClearedStage = d.maxClearedStage || 0; 
+        isFirstGachaFree = d.isFirstGachaFree !== undefined ? d.isFirstGachaFree : true;
         
-        // --- ここで保存されていたデータを各変数に戻しています ---
-        if (d.coins !== undefined) coins = d.coins;
-        if (d.stones !== undefined) stones = d.stones;
-        if (d.box) box = d.box;
-        if (d.selectedIds) selectedIds = d.selectedIds;
-        if (d.seeds) seeds = d.seeds;
-        if (d.auras) auras = d.auras;
-        if (d.weapons) weapons = d.weapons;
-        if (d.maxClearedStage !== undefined) maxClearedStage = d.maxClearedStage;
-        if (d.isFirstGachaFree !== undefined) isFirstGachaFree = d.isFirstGachaFree;
-
-        // --- 今回追加したレベルと経験値 ---
-        playerLevel = d.playerLevel || 1;
-        playerExp = d.playerExp || 0;
-        
-        // 名前の反映
+        // 保存された名前があれば反映する
         if (d.playerName) {
-            const nameElement = document.getElementById('player-name');
-            if (nameElement) nameElement.innerText = d.playerName;
+            document.getElementById('player-name').innerText = d.playerName;
         }
         
-        // 読み込みが終わったら画面を更新
-        updateHomeUI();
-    }
+        normalizeBoxData();
+        return true;
+    } return false;
 }
+
 // --- 売却機能のプログラム（ここから） ---
 let selectedInvAuraIds = [];
 let selectedInvWeaponIds = [];
@@ -609,40 +588,13 @@ function executeInventorySell() {
     }
 }
 // --- 売却機能のプログラム（ここまで） ---
-
-    // 経験値を獲得し、レベルアップを判定する関数
-function gainPlayerExp(amount) {
-    playerExp += amount;
     
-    // 現在のレベルでの必要経験値を計算
-    let needed = 10 + (playerLevel - 1) * 2;
-
-    // 経験値が必要量を超えている間、レベルアップを繰り返す
-    while (playerExp >= needed) {
-        playerExp -= needed;
-        playerLevel++;
-        needed = 10 + (playerLevel - 1) * 2;
-        alert("🎉 レベルアップ！ Lv." + playerLevel + " になりました！");
-    }
-    
-    saveData();    // 忘れずに保存
-    updateHomeUI(); // 画面を最新の状態にする
-}
 function updateHomeUI() {
     
     normalizeBoxData();
     document.getElementById('global-coin-count').innerText = coins;
     document.getElementById('global-stone-count').innerText = stones;
-
-    const lvElement = document.getElementById('player-level');
-    const expElement = document.getElementById('player-exp-text');
     
-    if (lvElement && expElement) {
-        lvElement.innerText = playerLevel;
-        // 仕様に基づいた計算：10 + (現在のレベル - 1) * 2
-        const needed = 10 + (playerLevel - 1) * 2; 
-        expElement.innerText = `(${playerExp}/${needed})`;
-    }
     const singleGachaBtn = document.getElementById('btn-gacha-normal-single');
     if (singleGachaBtn) {
         singleGachaBtn.innerHTML = isFirstGachaFree ? '通常単発<span style="color:#0f0;">(初回無料)</span>' : '通常単発<span>(10枚)</span>';
@@ -865,7 +817,7 @@ function playGacha(times) {
                     else if (roll < 98.0) selectedRarity = 4; else if (roll < 99.5) selectedRarity = 5; else selectedRarity = 6;
                 }
                 const pool = charData.filter(c => c.r === selectedRarity); const base = pool[Math.floor(Math.random() * pool.length)];
-                const newUnit = {...base, id: crypto.randomUUID(), auraId: null, auraIds: [], weaponId: null}; box.push(newUnit); results.push(newUnit);
+                const newUnit = {...base, id: Math.random(), auraId: null, auraIds: [], weaponId: null}; box.push(newUnit); results.push(newUnit);
                 
                 display.innerHTML = `<span style="font-size:${base.name.length >= 4 ? '50px' : '120px'};">${base.name}</span>`; display.className = "";
                 if (base.r >= 7) display.classList.add('rarity-god7'); else if (base.r === 6) display.classList.add('rarity-god'); else if (base.r >= 4) display.classList.add('rarity-high');
@@ -1216,7 +1168,6 @@ function startDigBattle(tier) {
 }
 
 function initBattle() {
-    isGlobalDomination = false;
     if (stage > currentEndStage) { 
         addLog(`★第 ${currentEndStage} 層 領域制覇！★`); if (stage - 1 > maxClearedStage) maxClearedStage = stage - 1; saveData(); 
         if (maxClearedStage >= 300) addLog("★前人未到の完全踏破を成し遂げた！★"); setTimeout(() => location.reload(), 2500); return; 
@@ -1505,7 +1456,6 @@ function next() {
     if (enemies.every(e => e.curH <= 0)) { 
         party.forEach(p => { p.curH = p.maxH; p.curM = p.m; p.poison = false; p.charm = 0; p.guard = false; p.usedPhoenix = false; });
         addLog("勝利！全員全回復した");
-        gainPlayerExp(1);
         
         if (isShadowMode) {
             addLog(`他者の影との手合わせが終了した！`);
@@ -1583,14 +1533,10 @@ function addLog(msg) {
 }
 
 window.onload = () => {
-    const loaded = loadData();
-    if (!loaded) {
-        // ロード失敗時は、勝手にセーブせず「データがないよ」という状態にするだけ
-        if (box.length === 0) { // 本当に初めて遊ぶ時だけ初期値をセット
-            box = [];
-            coins = 0; stones = 0;
-            // saveData(); ← ここで勝手に上書きしない！
-        }
+    if (!loadData()) {
+        box = [];
+        coins = 1500; stones = 15;
+        saveData();
     }
     updateHomeUI();
 };
