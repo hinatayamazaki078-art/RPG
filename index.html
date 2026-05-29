@@ -171,9 +171,11 @@
         <div class="section-title">【抽出・獲得したスキルの種】</div>
         <div id="seed-box" class="box-list" style="max-height: 130px; overflow-y: auto;"></div>
 
-        <div class="section-title">【所持している装具（武器）】</div>
-        <div id="weapon-box" class="box-list" style="max-height: 130px; overflow-y: auto;"></div>
-
+      <div class="section-title">【所持している装具（武器）】</div>
+<div id="weapon-box" class="box-list" style="max-height: 130px; overflow-y: auto;"></div>
+<div class="sell-btn-area">
+    <button id="btn-sell-weapon" class="sell-action-btn" onclick="sellSelectedWeapons()" disabled>選択した装具をまとめて売却（換金）</button>
+</div>
         <div class="controls" style="grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(5, 1fr); height: 180px; margin-top: 10px; gap: 4px;">
             <button id="btn-gacha-normal-single" class="gacha-btn" onclick="playGacha(1)">通常単発<span>(10枚)</span></button>
             <button class="gacha-btn" onclick="playGacha(10)">通常10連<span>(100枚)</span></button>
@@ -278,6 +280,30 @@
 </div>
 
 <script>
+    // ★追加：武器売却関数
+function sellSelectedWeapons() {
+    // 選択されている武器アイテムを探す (クラス名などで判定)
+    const selectedItems = document.querySelectorAll('#weapon-box .box-item.selected');
+    if (selectedItems.length === 0) return;
+
+    // 売却金額（例として1個50枚とする）
+    const sellPrice = 1; 
+    let totalGain = selectedItems.length * sellPrice;
+
+    // 所持金に加算
+    globalCoinCount += totalGain;
+    updateGlobalInfo(); // 所持金表示を更新する既存関数
+
+    // リストから削除（データ構造に合わせて適宜修正してください）
+    selectedItems.forEach(item => {
+        item.remove();
+    });
+
+    // ボタンの無効化
+    document.getElementById('btn-sell-weapon').disabled = true;
+    
+    alert(totalGain + " 枚の金を手に入れた！");
+}
 const charData = [
     { name: '蟻', r: 1, p: 1, h: 3, m: 0, s: 1 }, { name: '蝿', r: 1, p: 1, h: 3, m: 0, s: 3 },
     { name: '雀', r: 1, p: 2, h: 5, m: 0, s: 5 }, { name: '蚊', r: 1, p: 1, h: 2, m: 3, s: 1, skill: "吸血", cost: 3 },
