@@ -528,22 +528,50 @@ function updateInventorySellUI() {
     const freeWeapons = weapons.filter(w => !equippedWeaponIds.includes(w.id));
 
     let html = "";
+    
+    // 未装備武器の表示
     freeWeapons.forEach(w => {
         const isSelected = selectedInvWeaponIds.includes(w.id);
-        html += `<div class="seed-item ${isSelected ? 'selected' : ''}" style="border-color:${isSelected ? '#ff0' : '#444'}; color:#0ff; display:flex; justify-content:space-between; padding:8px; border:1px solid; margin-bottom:4px; background:#111;" onclick="toggleInvItem('weapon', ${w.id})"><span>⚔️ ${w.name}</span><span style="color:#ff0;">30枚</span></div>`;
-    });
-    freeAuras.forEach(a => {
-        const isSelected = selectedInvAuraIds.includes(a.id);
-        html += `<div class="seed-item ${isSelected ? 'selected' : ''}" style="border-color:${isSelected ? '#ff0' : '#444'}; color:#0ff; display:flex; justify-content:space-between; padding:8px; border:1px solid; margin-bottom:4px; background:#111;" onclick="toggleInvItem('aura', ${a.id})"><span>★${a.r} 【${a.type}】(${a.text})</span><span style="color:#ff0;">20枚</span></div>`;
+        html += `
+            <div class="seed-item" 
+                 style="border: 2px solid ${isSelected ? '#ff0' : '#444'}; 
+                        background: ${isSelected ? '#422' : '#111'}; 
+                        color: ${isSelected ? '#fff' : '#0ff'}; 
+                        display:flex; justify-content:space-between; padding:8px; margin-bottom:4px; border-radius:4px; transition: 0.2s;" 
+                 onclick="toggleInvItem('weapon', ${w.id})">
+                <span style="font-weight:bold;">${isSelected ? '✅ ' : ''}⚔️ ${w.name}</span>
+                <span style="color:#ff0;">${isSelected ? '売却確定' : '30枚'}</span>
+            </div>`;
     });
 
-    if (html === "") html = "<div style='text-align:center; color:#888; padding:20px;'>売却できるアイテムがありません</div>";
+    // 未装備オーラの表示
+    freeAuras.forEach(a => {
+        const isSelected = selectedInvAuraIds.includes(a.id);
+        html += `
+            <div class="seed-item" 
+                 style="border: 2px solid ${isSelected ? '#ff0' : '#444'}; 
+                        background: ${isSelected ? '#422' : '#111'}; 
+                        color: ${isSelected ? '#fff' : '#0ff'}; 
+                        display:flex; justify-content:space-between; padding:8px; margin-bottom:4px; border-radius:4px; transition: 0.2s;" 
+                 onclick="toggleInvItem('aura', ${a.id})">
+                <span style="font-weight:bold;">${isSelected ? '✅ ' : ''}★${a.r} 【${a.type}】</span>
+                <span style="color:#ff0;">${isSelected ? '売却確定' : '20枚'}</span>
+            </div>`;
+    });
+
+    if (html === "") {
+        html = "<div style='text-align:center; color:#888; padding:20px;'>売却できるアイテムがありません</div>";
+    }
+
     listContainer.innerHTML = html;
 
     const total = (selectedInvAuraIds.length * 20) + (selectedInvWeaponIds.length * 30);
     const btn = document.getElementById('btn-execute-inv-sell');
     if(btn) {
-        btn.innerHTML = total > 0 ? `選択したアイテムを売却（${total}枚獲得）` : "アイテムを選択してください";
+        // 合計金額が見えやすいようにボタンも強調
+        btn.innerHTML = total > 0 ? `選択中：${selectedInvAuraIds.length + selectedInvWeaponIds.length}件（${total}枚で売却）` : "売るアイテムを選んでください";
+        btn.style.background = total > 0 ? "#800" : "#333";
+        btn.style.borderColor = total > 0 ? "#f55" : "#555";
         btn.disabled = total === 0;
     }
 }
