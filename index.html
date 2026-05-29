@@ -121,7 +121,7 @@
     <!-- ▼ここに追加！▼ -->
     <div id="player-profile" style="display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #333; margin-bottom: 5px; cursor: pointer;" onclick="changePlayerName()">
         <div id="player-icon" style="width: 30px; height: 30px; border-radius: 50%; background: #222; border: 2px solid #555; display: flex; align-items: center; justify-content: center; font-size: 14px; margin-right: 10px;">👤</div>
-        <div id="player-name" style="font-size: 16px; color: #fff;">名もなき者</div>
+        <div id="player-name" style="font-size: 16px; color: #fff;"onclick="changeName()">名もなき者</div>
     </div>
    <!-- display: none; にしておきます -->
 <div id="intro-overlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 200; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box; padding: 20px;">
@@ -1601,7 +1601,25 @@ window.addEventListener('load', function() {
 // ボタンを押して画面を閉じる処理（すでにあれば不要です）
 function closeIntro() {
     document.getElementById('intro-overlay').style.display = 'none';
-}   
+}
+   // --- ここから下に追記 ---
+
+function changeName() {
+  // プレイヤーに名前を入力してもらう
+  let input = prompt("名前を入力してください:", "名もなき者");
+  
+  // 入力がキャンセルされず、空欄でなければ更新する
+  if (input !== null && input !== "") {
+    // 画面上の表示を更新
+    document.getElementById("player-name").innerText = input;
+    
+    // もしプレイヤーデータを保存しているなら、ここで更新する（該当なければ削除可）
+    // player.name = input;
+    // saveGame(); // セーブ関数がある場合
+  }
+}
+
+// --- ここまで --- 
 </script>
 </body>
 </html>
