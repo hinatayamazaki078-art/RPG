@@ -420,7 +420,12 @@ let isGlobalDomination = false;
 let selectedBattleSkill = null; 
 let playerIcon = '👤'; // 現在設定中のアイコン
 let ownedIcons = ['👤']; // 所持しているアイコンの配列（今後の拡張用）
-// スキル並び替え用変数
+// ガチャから出る全アイコンのリスト（ここを自由に入れ替えてください）
+const ALL_AVATARS = ['👤', '🔥', '💧', '⚡', '🌟', '👹', '💀', '👽', '🤖', '🎃', '💎', '🍀'];
+
+// アイコンガチャの価格
+const ICON_GACHA_COST = 30;
+    // スキル並び替え用変数
 let dragSrcIdx = null;
    
     let playerLevel = 1;
