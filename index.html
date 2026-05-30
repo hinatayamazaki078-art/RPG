@@ -117,7 +117,7 @@
 <body>
 
 <div id="game-screen">
-    <img src="001.png" alt="テスト画像" style="width: 100px; height: 100px; border: 2px solid red;">
+   
     <!-- ▼ここに追加！▼ -->
    <div id="player-profile" style="display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #333; margin-bottom: 5px;">
         <div id="player-icon" style="margin-right: 5px; cursor: pointer; padding: 2px 5px; border: 1px dashed #555; border-radius: 4px;" onclick="openIconSelect()">👤</div>
@@ -1201,15 +1201,16 @@ function executeWeaponUpgrade(weaponId) {
 
     // --- アイコン変更機能のプログラム ---
 function openIconSelect() {
-    // 全てのviewを非表示にして、アイコン選択画面を表示
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById('view-icon-select').classList.add('active');
     
-    // アイコン一覧を描画
     const listContainer = document.getElementById('icon-list');
-    listContainer.innerHTML = ownedIcons.map(icon => {
+    
+    // (icon) を (icon, index) にして、何番目のアイテムかを取得できるようにします
+    listContainer.innerHTML = ownedIcons.map((icon, index) => {
         const isSelected = icon === playerIcon;
-        return `<div class="box-item ${isSelected ? 'selected' : ''}" style="font-size: 30px;" onclick="selectIcon('${icon}')">
+        // selectIcon('${icon}') だった部分を、セーフな selectIcon(${index}) に書き換えます
+        return `<div class="box-item ${isSelected ? 'selected' : ''}" style="font-size: 30px;" onclick="selectIcon(${index})">
             ${icon}
         </div>`;
     }).join('') + `<div style="grid-column: span 4; color: #555; text-align: center; font-size: 11px; padding-top: 15px;">※新たなアイコンは今後のアップデートで追加されます</div>`;
@@ -1220,8 +1221,8 @@ function closeIconSelect() {
     document.getElementById('view-home').classList.add('active');
 }
 
-function selectIcon(icon) {
-    playerIcon = icon;
+function selectIcon(index) {
+    playerIcon = ownedIcons[index]; 
     document.getElementById('player-icon').innerHTML = playerIcon; // UI更新
     saveData();
     closeIconSelect(); // 選択したら拠点に戻る
