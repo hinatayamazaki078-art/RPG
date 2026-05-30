@@ -413,6 +413,48 @@ let selectedBattleSkill = null;
 
 // スキル並び替え用変数
 let dragSrcIdx = null;
+   
+    let playerLevel = 1;
+let playerExp = 0;
+
+// ★さらに、この変数定義の下あたりに以下の3つの関数を追加します★
+function getNextLevelExp(level) {
+    // 10 + (レベル - 1) * 2 の計算式
+    return 10 + (level - 1) * 2;
+}
+
+function updatePlayerLevelUI() {
+    const display = document.getElementById('player-level-display');
+    if (display) {
+        display.innerText = `Lv.${playerLevel} (${playerExp}/${getNextLevelExp(playerLevel)})`;
+    }
+}
+
+function gainPlayerExp(amount) {
+    playerExp += amount;
+    let leveledUp = false;
+    let currentMax = getNextLevelExp(playerLevel);
+    
+    // 経験値が必要値を超えている限りレベルアップを繰り返す
+    while (playerExp >= currentMax) {
+        playerExp -= currentMax;
+        playerLevel++;
+        currentMax = getNextLevelExp(playerLevel);
+        leveledUp = true;
+    }
+    
+    updatePlayerLevelUI();
+    saveData();
+    
+    if (leveledUp) {
+        // 戦闘画面が開いていればログに、そうでなければアラートで通知
+        if (document.getElementById('view-battle').classList.contains('active')) {
+            addLog(`✨ プレイヤーレベルが ${playerLevel} に上がった！ ✨`);
+        } else {
+            alert(`プレイヤーレベルが ${playerLevel} に上がりました！`);
+        }
+    }
+}
 
 function getSlotCost(type, currentSlots) {
     if (type === 'skill') {
