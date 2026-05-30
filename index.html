@@ -206,6 +206,7 @@
             
             <button class="aura-btn" onclick="playAuraGacha()">霊気ガチャ<span>(30枚)</span></button>
             <button class="skill-gacha-btn" onclick="playSkillGacha()">スキルガチャ<span>(20枚)</span></button>
+            <button class="gacha-btn" style="background:#022; border-color:#0cc;" onclick="playIconGacha()">アバターガチャ<span>(50枚)</span></button>
             
             <button style="grid-column: span 2; background: #444; border-color: #f55; color: #fcc; font-size: 12px;" onclick="openInventorySell()">持ち物整理（売却）</button>
             
@@ -305,6 +306,14 @@
 </div>
 
 <script>
+// ↓他の定数（const SKILL_DATA など）の近くにこれを追加してください
+const ICON_DATA = [
+    { icon: '🐶', r: 1 }, { icon: '🐱', r: 1 }, { icon: '🐭', r: 1 }, { icon: '🐹', r: 1 },
+    { icon: '🦊', r: 2 }, { icon: '🐻', r: 2 }, { icon: '🐼', r: 2 }, { icon: '🐨', r: 2 },
+    { icon: '🦁', r: 3 }, { icon: '🐯', r: 3 }, { icon: '🦄', r: 4 }, { icon: '🐉', r: 5 },
+    { icon: '👑', r: 6 }, { icon: '👽', r: 7 }, { icon: '👹', r: 7 }
+];
+    
 const charData = [
     { name: '蟻', r: 1, p: 1, h: 3, m: 0, s: 1 }, { name: '蝿', r: 1, p: 1, h: 3, m: 0, s: 3 },
     { name: '雀', r: 1, p: 2, h: 5, m: 0, s: 5 }, { name: '蚊', r: 1, p: 1, h: 2, m: 3, s: 1, skill: "吸血", cost: 3 },
@@ -856,6 +865,73 @@ function playSkillGacha() {
     }, 40);
 }
 
+// ▼他のガチャ関数の下あたりに追加してください▼
+function playIconGacha() {
+    const cost = 50; // ガチャの消費コイン
+    if (coins < cost) return alert(`コインが不足しています！（必要コイン: ${cost}枚）`);
+    coins -= cost; 
+    document.getElementById('global-coin-count').innerText = coins;
+    
+    openGachaOverlay("アバター召喚中...");
+    const display = document.getElementById('gacha-kanji-display');
+    const resultName = document.getElementById('gacha-result-name');
+    const resultList = document.getElementById('gacha-result-list');
+    
+    let count = 0;
+    const interval = setInterval(() => {
+        // パラパラとアイコンが切り替わる演出
+        display.innerText = ICON_DATA[Math.floor(Math.random() * ICON_DATA.length)].icon; 
+        count++;
+        if (count > 15) {
+            clearInterval(interval);
+            
+            // レアリティの確率抽選
+            const roll = Math.random() * 100;
+            let targetR = 1;
+            if (roll < 60) targetR = 1;
+            else if (roll < 85) targetR = 2;
+            else if (roll < 94) targetR = 3;
+            else if (roll < 98) targetR = 4;
+            else if (roll < 99.5) targetR = 5;
+            else if (roll < 99.9) targetR = 6;
+            else targetR = 7;
+
+            // 抽選されたレアリティの中からランダムで1つ選ぶ
+            const pool = ICON_DATA.filter(i => i.r === targetR) || ICON_DATA;
+            const resultIcon = pool[Math.floor(Math.random() * pool.length)];
+
+            display.innerText = resultIcon.icon;
+            display.className = ""; // クラスをリセット
+            
+            // レアリティに応じた光り方（既存のクラスを使い回し）
+            if (resultIcon.r >= 7) display.classList.add('rarity-god7'); 
+            else if (resultIcon.r >= 5) display.classList.add('rarity-god'); 
+            else if (resultIcon.r >= 3) display.classList.add('rarity-high');
+            
+            // 所持チェック
+            if (!ownedIcons.includes(resultIcon.icon)) {
+                ownedIcons.push(resultIcon.icon);
+                resultName.innerText = "新アバター獲得！";
+            } else {
+                resultName.innerText = "アバター獲得！（重複）";
+                const refund = resultIcon.r * 10; // 被った場合はレア度×10のコイン還元
+                coins += refund;
+                alert(`※既に所持していたため、コイン${refund}枚に変換されました。`);
+            }
+
+            // 結果画面の構築
+            resultList.innerHTML = `<div class="gacha-res-item" style="width:100px; height:100px; color:${resultIcon.r>=5?'#f0f':(resultIcon.r>=3?'#ff0':'#0ff')}; border-color:${resultIcon.r>=5?'#f0f':(resultIcon.r>=3?'#ff0':'#0aa')};">
+                <span class="rarity">${'★'.repeat(resultIcon.r)}</span>
+                <div style="font-size:45px; margin-top:8px;">${resultIcon.icon}</div>
+            </div>`;
+            
+            document.getElementById('gacha-close-btn').style.display = 'block'; 
+            saveData(); // 新しく手に入れたアイコンや消費したコインをセーブ
+            updateHomeUI(); // 画面上部のコイン数を更新
+        }
+    }, 40); // 演出のスピード
+}
+    
 function playGacha(times) {
     let cost = times === 10 ? 100 : 10;
     let isFree = false;
