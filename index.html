@@ -118,11 +118,19 @@
 
 <div id="game-screen">
     <!-- ▼ここに追加！▼ -->
-   <div id="player-profile" style="display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #333; margin-bottom: 5px; cursor: pointer;" onclick="changeName()">
-    <div id="player-icon" style="margin-right: 5px;">👤</div>
-    <div id="player-name" style="font-size: 16px; color: #fff; margin-right: 15px;">名もなき者</div>
-    <div id="player-level-display" style="font-size: 14px; color: #ff0; font-weight: bold;">Lv.1 (0/10)</div>
-</div>
+   <div id="player-profile" style="display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #333; margin-bottom: 5px;">
+        <div id="player-icon" style="margin-right: 5px; cursor: pointer; padding: 2px 5px; border: 1px dashed #555; border-radius: 4px;" onclick="openIconSelect()">👤</div>
+        <div id="player-name" style="font-size: 16px; color: #fff; margin-right: 15px; cursor: pointer; padding: 5px;" onclick="changeName()">名もなき者</div>
+        <div id="player-level-display" style="font-size: 14px; color: #ff0; font-weight: bold;">Lv.1 (0/10)</div>
+    </div>
+
+    <div id="view-icon-select" class="view">
+        <h2>アイコン変更</h2>
+        <div class="guide-text">※タップしてアイコンを変更します</div>
+        <div id="icon-list" class="box-list" style="grid-template-columns: repeat(4, 1fr); max-height: 480px; overflow-y: auto;">
+            </div>
+        <button onclick="closeIconSelect()" style="height:45px; margin-top:15px;">拠点に戻る</button>
+    </div>
    <!-- display: none; にしておきます -->
 <div id="intro-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.70); z-index: 1000; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box; padding: 20px;">
         
@@ -410,7 +418,8 @@ let party = [], enemies = [], stage = 1, queue = [], qIdx = 0, isSelecting = fal
 let darumaTrigger = null; 
 let isGlobalDomination = false;
 let selectedBattleSkill = null; 
-
+let playerIcon = '👤'; // 現在設定中のアイコン
+let ownedIcons = ['👤']; // 所持しているアイコンの配列（今後の拡張用）
 // スキル並び替え用変数
 let dragSrcIdx = null;
    
@@ -497,11 +506,15 @@ function changeName() {
         saveData(); // 名前を変更したら保存する
     }
 }    
+// 修正後
 function saveData() { 
     normalizeBoxData();
     const playerName = document.getElementById('player-name').innerText;
-    // ★ playerLevel, playerExp を保存対象に追加 ★
-    localStorage.setItem('kanji_rpg_v2_data', JSON.stringify({ coins, stones, box, selectedIds, seeds, auras, weapons, maxClearedStage, isFirstGachaFree, playerName, playerLevel, playerExp })); 
+    // playerIcon と ownedIcons を追加
+    localStorage.setItem('kanji_rpg_v2_data', JSON.stringify({ 
+        coins, stones, box, selectedIds, seeds, auras, weapons, maxClearedStage, 
+        isFirstGachaFree, playerName, playerLevel, playerExp, playerIcon, ownedIcons 
+    })); 
 }
 
 function loadData() {
@@ -518,6 +531,10 @@ function loadData() {
         // ★ 保存されたレベルと経験値を読み込む（なければ初期値） ★
         playerLevel = d.playerLevel || 1;
         playerExp = d.playerExp || 0;
+
+        playerIcon = d.playerIcon || '👤';
+        ownedIcons = d.ownedIcons || ['👤'];
+        document.getElementById('player-icon').innerText = playerIcon;
         
         // 保存された名前があれば反映する
         if (d.playerName) {
@@ -1114,6 +1131,33 @@ function executeWeaponUpgrade(weaponId) {
     saveData(); updateShopUI();
 }
 
+    // --- アイコン変更機能のプログラム ---
+function openIconSelect() {
+    // 全てのviewを非表示にして、アイコン選択画面を表示
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-icon-select').classList.add('active');
+    
+    // アイコン一覧を描画
+    const listContainer = document.getElementById('icon-list');
+    listContainer.innerHTML = ownedIcons.map(icon => {
+        const isSelected = icon === playerIcon;
+        return `<div class="box-item ${isSelected ? 'selected' : ''}" style="font-size: 30px;" onclick="selectIcon('${icon}')">
+            ${icon}
+        </div>`;
+    }).join('') + `<div style="grid-column: span 4; color: #555; text-align: center; font-size: 11px; padding-top: 15px;">※新たなアイコンは今後のアップデートで追加されます</div>`;
+}
+
+function closeIconSelect() {
+    document.getElementById('view-icon-select').classList.remove('active');
+    document.getElementById('view-home').classList.add('active');
+}
+
+function selectIcon(icon) {
+    playerIcon = icon;
+    document.getElementById('player-icon').innerText = playerIcon; // UI更新
+    saveData();
+    closeIconSelect(); // 選択したら拠点に戻る
+}
 function equipAura(auraId) { 
     const char = box.find(b => b.id === shopTargetId); if (!char) return;
     if (!char.auraIds) char.auraIds = [];
