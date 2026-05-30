@@ -308,7 +308,7 @@
 <script>
 // ↓他の定数（const SKILL_DATA など）の近くにこれを追加してください
 const ICON_DATA = [
-   { icon: '<img src="image_0.png" class="gacha-icon-img">', r: 1 },
+   { icon: '<img src="001.png.png" style="width:100%; height:100%; object-fit:contain;">', r: 1 },
 ];
     
 const charData = [
@@ -545,7 +545,7 @@ function loadData() {
 
         playerIcon = d.playerIcon || '👤';
         ownedIcons = d.ownedIcons || ['👤'];
-        document.getElementById('player-icon').innerText = playerIcon;
+        document.getElementById('player-icon').innerHTML = playerIcon;
         
         // 保存された名前があれば反映する
         if (d.playerName) {
@@ -877,7 +877,7 @@ function playIconGacha() {
     let count = 0;
     const interval = setInterval(() => {
         // パラパラとアイコンが切り替わる演出
-        display.innerText = ICON_DATA[Math.floor(Math.random() * ICON_DATA.length)].icon; 
+        display.innerHTML = ICON_DATA[Math.floor(Math.random() * ICON_DATA.length)].icon; 
         count++;
         if (count > 15) {
             clearInterval(interval);
@@ -897,7 +897,7 @@ function playIconGacha() {
             const pool = ICON_DATA.filter(i => i.r === targetR) || ICON_DATA;
             const resultIcon = pool[Math.floor(Math.random() * pool.length)];
 
-            display.innerText = resultIcon.icon;
+            display.innerHTML = resultIcon.icon;
             display.className = ""; // クラスをリセット
             
             // レアリティに応じた光り方（既存のクラスを使い回し）
@@ -1232,7 +1232,7 @@ function closeIconSelect() {
 
 function selectIcon(icon) {
     playerIcon = icon;
-    document.getElementById('player-icon').innerText = playerIcon; // UI更新
+    document.getElementById('player-icon').innerHTML = playerIcon; // UI更新
     saveData();
     closeIconSelect(); // 選択したら拠点に戻る
 }
