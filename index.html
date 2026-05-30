@@ -500,7 +500,8 @@ function changeName() {
 function saveData() { 
     normalizeBoxData();
     const playerName = document.getElementById('player-name').innerText;
-    localStorage.setItem('kanji_rpg_v2_data', JSON.stringify({ coins, stones, box, selectedIds, seeds, auras, weapons, maxClearedStage, isFirstGachaFree, playerName })); 
+    // ★ playerLevel, playerExp を保存対象に追加 ★
+    localStorage.setItem('kanji_rpg_v2_data', JSON.stringify({ coins, stones, box, selectedIds, seeds, auras, weapons, maxClearedStage, isFirstGachaFree, playerName, playerLevel, playerExp })); 
 }
 
 function loadData() {
@@ -514,14 +515,23 @@ function loadData() {
         maxClearedStage = d.maxClearedStage || 0; 
         isFirstGachaFree = d.isFirstGachaFree !== undefined ? d.isFirstGachaFree : true;
         
+        // ★ 保存されたレベルと経験値を読み込む（なければ初期値） ★
+        playerLevel = d.playerLevel || 1;
+        playerExp = d.playerExp || 0;
+        
         // 保存された名前があれば反映する
         if (d.playerName) {
             document.getElementById('player-name').innerText = d.playerName;
         }
         
+        // ★ 読み込んだ情報でUIを更新 ★
+        updatePlayerLevelUI();
         normalizeBoxData();
         return true;
-    } return false;
+    } 
+    // ★ セーブデータがない場合（初回）もUIを更新 ★
+    updatePlayerLevelUI();
+    return false;
 }
 
 // --- 売却機能のプログラム（ここから） ---
