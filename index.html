@@ -1745,8 +1745,9 @@ window.onload = () => {
       return alert("アップロードする出撃メンバーを選んでください。");
     }
 
-    const playerName = prompt("影の登録名を入力してください（未入力なら「名もなき者」になります）");
-    if (playerName === null) return;
+    const playerName = document.getElementById('player-name').innerText;
+    // ▼追加：画面上のアバターアイコン（文字または画像タグ）を取得▼
+    const playerAvatar = document.getElementById('player-icon').innerHTML;
 
     let shadowCode = prompt("検索・公開用の【4桁の数字】を入力してください（例: 1234）");
     if (shadowCode === null) return;
@@ -1770,6 +1771,7 @@ window.onload = () => {
         party: myShadowParty,
         createdAt: serverTimestamp(),
         uploader: playerName || "名もなき者",
+        uploaderIcon: playerAvatar, // ▼追加：データベースにアバター情報も保存▼
         code: shadowCode
       });
       localStorage.setItem('kanji_rpg_v2_shadow_doc_id', docRef.id);
@@ -1779,7 +1781,6 @@ window.onload = () => {
       alert("アップロードに失敗しました。");
     }
   };
-
   window.deleteMyShadow = async function() {
     const docId = localStorage.getItem('kanji_rpg_v2_shadow_doc_id');
     if (!docId) return alert("削除可能な影データが見つかりません。");
@@ -1824,8 +1825,15 @@ window.onload = () => {
     container.innerHTML = list.map((shadow, index) => {
         const pNames = shadow.party.map(p => p.name).join(' / ');
         const shadowName = shadow.uploader || "名もなき者";
+        // ▼追加：保存されたアバターを取得（古いデータ用に初期値も設定）▼
+        const shadowIcon = shadow.uploaderIcon || "👤"; 
+
         return `<button class="stage-select-btn" onclick="startShadowBattleFromList(${index})" style="height:auto; min-height:60px; padding:8px 15px; border-color:#a0a;">
-            <div style="font-size:16px; color:#f0f; margin-bottom:4px;">${shadowName} <span style="font-size:10px; color:#ccc;">(検索コード: ${shadow.code || 'なし'})</span></div>
+            <div style="font-size:16px; color:#f0f; margin-bottom:4px; display:flex; align-items:center;">
+                <span style="margin-right:6px; display:flex; align-items:center;">${shadowIcon}</span>
+                <span>${shadowName}</span> 
+                <span style="font-size:10px; color:#ccc; margin-left:5px;">(検索コード: ${shadow.code || 'なし'})</span>
+            </div>
             <div style="font-size:11px; color:#0ff;">編成: ${pNames}</div>
             <span class="clear-text" style="color:#ff0; top: 50%; transform: translateY(-50%);">▶ 挑む</span>
         </button>`;
