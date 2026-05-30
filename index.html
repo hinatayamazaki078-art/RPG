@@ -112,6 +112,19 @@
         
         #shadow-search-input { width: 100%; padding: 10px; margin-right: 5px; background: #111; color: #fff; border: 1px solid #a0a; box-sizing: border-box; font-size: 16px; text-align: center; }
         #shadow-search-input::placeholder { color: #555; }
+        
+        /* ▼ ここから追加：セーブデータに負けずにアバターサイズを強制固定する ▼ */
+        #player-icon img {
+            width: 24px !important;
+            height: 24px !important;
+            vertical-align: middle !important;
+        }
+        #icon-list .box-item img {
+            width: 32px !important;
+            height: 32px !important;
+            object-fit: contain !important;
+        }
+        /* ▲ ここまで追加 ▲ */
     </style>
 </head>
 <body>
