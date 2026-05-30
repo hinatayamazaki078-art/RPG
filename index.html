@@ -1508,6 +1508,8 @@ function next() {
     if (enemies.every(e => e.curH <= 0)) { 
         party.forEach(p => { p.curH = p.maxH; p.curM = p.m; p.poison = false; p.charm = 0; p.guard = false; p.usedPhoenix = false; });
         addLog("勝利！全員全回復した");
+
+        gainPlayerExp(1);
         
         if (isShadowMode) {
             addLog(`他者の影との手合わせが終了した！`);
