@@ -1737,15 +1737,17 @@ function onUnitClick(targetId) {
 
 function executeAction(u, t, type, skillName = null) {
     if (type === 'attack') {
-        if (u.blind > 0 && Math.random() < 0.3) { addLog("💫【閃光】" + u.name + "の攻撃は外れた！"); return next(); }
+       u.curM += 3;
+
+        if (u.blind > 0 && Math.random() < 0.3) { addLog("💫【閃光】" + u.name + "の攻撃は外れた！ (MP+3)"); return next(); }
         
         let isEvaded = false;
         if (t.auras) {
             const evadeAu = t.auras.find(a => a.type === '回避');
             if (evadeAu && Math.random() * 100 < evadeAu.value) isEvaded = true;
         }
-        if (isEvaded) { addLog("💨【回避】" + t.name + "は避けた！"); return next(); }
-        if (t.invincible > 0) { addLog("🛡️【強固な甲羅】" + t.name + "へのダメージは0！"); return next(); }
+        if (isEvaded) { addLog("💨【回避】" + t.name + "は避けた！ (MP+3)"); return next(); }
+        if (t.invincible > 0) { addLog("🛡️【強固な甲羅】" + t.name + "へのダメージは0！ (MP+3)"); return next(); }
         
         let dmg = u.p; if (isGlobalDomination) dmg = Math.ceil(dmg / 2); if (u.atkBuff > 0) dmg *= 2;
         let isCrit = false; 
@@ -1755,7 +1757,7 @@ function executeAction(u, t, type, skillName = null) {
         }
         if (t.guard) dmg = 1;
         t.curH = Math.max(0, t.curH - dmg); u.lastDmg = dmg;
-        if (isCrit) addLog("💥" + u.name + "の会心の一撃：" + dmg + "ダメ"); else addLog(u.name + "の攻撃：" + dmg + "ダメ");
+        if (isCrit) addLog("💥" + u.name + "の会心の一撃：" + dmg + "ダメ (MP+3)"); else addLog(u.name + "の攻撃：" + dmg + "ダメ (MP+3)");
         checkAndRevivePhoenix(t);
     } else {
         const sName = skillName || u.skill;
@@ -1896,7 +1898,7 @@ function updateUI() {
             }
         }
         
-        let statsStr = `HP:${u.curH}/${u.maxH}`; if(u.maxM>0) statsStr += ` M:${u.curM}`;
+        let statsStr = `HP:${u.curH}/${u.maxH}`; if(u.maxM > 0 || u.curM > 0) statsStr += ` M:${u.curM}`;
         let hpPct = Math.max(0, (u.curH / u.maxH) * 100);
         let badgeHtml = "";
         if (u.atkBuff > 0) badgeHtml += '<span style="color:#f55; font-size:10px;">[攻↑]</span>';
