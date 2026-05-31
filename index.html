@@ -938,7 +938,7 @@ function playSkillGacha() {
 
 // ▼他のガチャ関数の下あたりに追加してください▼
 function playIconGacha() {
-    const cost = 50; // ガチャの消費コイン
+    const cost = 1; // ガチャの消費コイン
     if (coins < cost) return alert(`コインが不足しています！（必要コイン: ${cost}枚）`);
     coins -= cost; 
     document.getElementById('global-coin-count').innerText = coins;
