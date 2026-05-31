@@ -2002,11 +2002,39 @@ function addLog(msg) {
 }
 
 window.onload = () => {
+    // 1. まずデータを読み込む
     if (!loadData()) {
+        // 2. セーブデータがない（初回起動）の場合の初期化
         box = [];
-        coins = 0; stones = 0;
+        coins = 0; // ご要望通り0枚
+        stones = 0;
+        
+        // 3. 既存のキャラクターテンプレートから「蟻」「蝿」「蛾」を探して追加
+        // ※ charTypes はコード内で定義されているはずのキャラデータ配列です
+        const starterNames = ['蟻', '蝿', '蛾'];
+        
+        starterNames.forEach(name => {
+            // charTypesの中から名前が一致するデータを見つける
+            const template = charData.find(c => c.name === name);
+            if (template) {
+                // ボックス用オブジェクトを作成（固有IDを付与）
+                box.push({
+                    ...template,
+                    id: Date.now() + Math.random(), // 固有ID
+                    auraIds: [],
+                    weaponId: null
+                });
+            }
+        });
+
+        // 4. 最初からパーティに編成しておく（必要であれば）
+        selectedIds = box.map(c => c.id);
+        
+        // 5. 初回データを保存
         saveData();
     }
+    
+    // UIの更新
     updateHomeUI();
 };
 </script>
