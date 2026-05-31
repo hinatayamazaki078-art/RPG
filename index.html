@@ -125,6 +125,19 @@
             object-fit: contain !important;
         }
         /* ▲ ここまで追加 ▲ */
+        /* ▼ 影一覧のアバターサイズを強制固定 ▼ */
+        .shadow-avatar-wrap {
+            font-size: 40px !important; /* 絵文字アバターのサイズ */
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            margin-right: 6px;
+        }
+        .shadow-avatar-wrap img {
+            width: 40px !important;     /* 画像アバターの横幅 */
+            height: 40px !important;    /* 画像アバターの縦幅 */
+            object-fit: contain !important;
+        }
     </style>
 </head>
 <body>
@@ -1830,7 +1843,7 @@ window.onload = () => {
 
         return `<button class="stage-select-btn" onclick="startShadowBattleFromList(${index})" style="height:auto; min-height:60px; padding:8px 15px; border-color:#a0a;">
             <div style="font-size:16px; color:#f0f; margin-bottom:4px; display:flex; align-items:center;">
-                <span style="margin-right:6px; display:flex; align-items:center;">${shadowIcon}</span>
+                <span class="shadow-avatar-wrap">${shadowIcon}</span>
                 <span>${shadowName}</span> 
                 <span style="font-size:10px; color:#ccc; margin-left:5px;">(検索コード: ${shadow.code || 'なし'})</span>
             </div>
