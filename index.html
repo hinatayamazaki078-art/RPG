@@ -248,6 +248,7 @@
             <button class="skill-gacha-btn" onclick="playSkillGacha()">スキルガチャ<span>(20枚)</span></button>
             <button class="gacha-btn" style="background:#022; border-color:#0cc;" onclick="playIconGacha()">アバターガチャ<span>(20枚)</span></button>
             
+            <button class="gacha-btn" style="background:#404; border-color:#f0f;" onclick="playCrystalGacha()">具現ガチャ<span>(5万枚)</span></button>
             <button style="grid-column: span 2; background: #444; border-color: #f55; color: #fcc; font-size: 12px;" onclick="openInventorySell()">持ち物整理（売却）</button>
             
             <button class="boss-btn" style="grid-column: span 2;" onclick="openBossSelection()">強者の間</button>
@@ -743,7 +744,8 @@ function saveData() {
     // playerIcon と ownedIcons を追加
     localStorage.setItem('kanji_rpg_v2_data', JSON.stringify({ 
         coins, stones, box, selectedIds, seeds, auras, weapons, maxClearedStage, 
-        isFirstGachaFree, playerName, playerLevel, playerExp, playerIcon, ownedIcons 
+        isFirstGachaFree, playerName, playerLevel, playerExp, playerIcon, ownedIcons
+        ,crystals
     })); 
 }
 
@@ -761,6 +763,8 @@ function loadData() {
         // ★ 保存されたレベルと経験値を読み込む（なければ初期値） ★
         playerLevel = d.playerLevel || 1;
         playerExp = d.playerExp || 0;
+
+        crystals = d.crystals || 0;
 
         playerIcon = d.playerIcon || '👤';
         ownedIcons = d.ownedIcons || ['👤'];
@@ -1478,6 +1482,80 @@ function applySeed(idx) {
     }
 }
 
+// ▼▼▼ ここから入れ替え ▼▼▼
+let crystals = 0; // 具現ノ結晶の所持数（上の方の let coins = 0; の仲間に入れてもOKです）
+
+function playCrystalGacha() {
+    const cost = 50000;
+    if (coins < cost) return alert(`コインが不足しています！（必要コイン: 50,000枚）\n現在: ${coins}枚`);
+    
+    // コイン消費
+    coins -= cost; 
+    document.getElementById('global-coin-count').innerText = coins;
+    
+    // ガチャ演出画面を開く
+    openGachaOverlay("具現召喚中..."); 
+    const display = document.getElementById('gacha-kanji-display');
+    const resultName = document.getElementById('gacha-result-name');
+    const resultList = document.getElementById('gacha-result-list');
+    
+    let count = 0;
+    const interval = setInterval(() => {
+        // 演出中は💎マークをパラパラさせる
+        display.innerHTML = "💎"; 
+        count++;
+        if (count > 15) {
+            clearInterval(interval); 
+            
+            const rand = Math.random() * 100;
+            let resultText = "";
+            let itemType = "";
+
+            if (rand < 70.0) {
+                // 70%: ★7キャラ排出
+                itemType = "★7 キャラ";
+                const pool = charData.filter(c => c.r === 7); 
+                const base = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : charData[0];
+                const newUnit = {...base, id: Math.random(), auraId: null, auraIds: [], weaponId: null}; 
+                box.push(newUnit);
+                
+                resultText = base.name;
+                display.innerHTML = `<span style="font-size:120px;">${base.name}</span>`; 
+                display.className = "rarity-god7";
+                
+            } else if (rand < 90.0) {
+                itemType = "ピンク★1"; resultText = "未実装"; display.innerHTML = "❓"; display.className = "rarity-god";
+            } else if (rand < 95.0) {
+                itemType = "ピンク★2"; resultText = "未実装"; display.innerHTML = "❓"; display.className = "rarity-god";
+            } else if (rand < 98.0) {
+                itemType = "ピンク★3"; resultText = "未実装"; display.innerHTML = "❓"; display.className = "rarity-god";
+            } else if (rand < 99.5) {
+                itemType = "ピンク★4"; resultText = "未実装"; display.innerHTML = "❓"; display.className = "rarity-god";
+            } else {
+                // 0.5%: 具現ノ結晶
+                itemType = "具現ノ結晶";
+                resultText = "具現ノ結晶";
+                display.innerHTML = "💎"; 
+                display.className = "rarity-god7";
+                crystals++; // 結晶を増やす
+            }
+            
+            // 結果画面の構築
+            resultName.innerText = `${itemType} 獲得！`;
+            resultList.innerHTML = `<div class="gacha-res-item" style="width:120px; height:120px; color:#f0f; border-color:#f0f;">
+                <span class="rarity">✨超激レア✨</span>
+                <div style="font-size:20px; font-weight:bold; margin-top:20px;">${resultText}</div>
+            </div>`;
+            
+            document.getElementById('gacha-close-btn').style.display = 'block'; 
+            
+            saveData(); // ここで既存のセーブ処理を呼ぶ
+            updateHomeUI(); // UI更新
+        }
+    }, 40); 
+}
+// ▲▲▲ ここまで入れ替え ▲▲▲
+    
 function extractSkill() { 
     const char = box.find(b => b.id === shopTargetId); 
     if (char && !char.special && confirm("本当にこの漢字を消滅させ、修得している全てのスキルを種として抽出しますか？（※装具やオーラは全て返却されます）")) { 
