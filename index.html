@@ -259,6 +259,7 @@
             <button style="grid-column: span 2; background: #303; border-color: #a0a; color: #f0f; font-size: 12px;" onclick="uploadMyShadow()">影を刻む</button>
             <button style="grid-column: span 2; background: #300; border-color: #f00; color: #f88; font-size: 12px;" onclick="deleteMyShadow()">影を削除</button>
             
+            <button style="grid-column: span 4; background: #500; border-color: #f00; color: #ff0; font-size: 15px; font-weight: bold; text-shadow: 0 0 5px #f00;" onclick="openShadowKing()">👑 影ノ支配（玉座）に挑む</button>
             <button id="btn-start" style="grid-column: span 4;" onclick="openStageSelection()">戦場出撃</button>
         </div>
     </div>
@@ -331,6 +332,17 @@
         <button onclick="closeShop()" style="height:40px; margin-top:5px;">拠点に戻る</button>
     </div>
 
+    <div id="view-shadow-king" class="view">
+    <h2 style="color:#f00; text-shadow: 0 0 10px #f00;">👑 影ノ支配 👑</h2>
+    <div class="guide-text">※現在の頂点に君臨する者に挑み、勝利して玉座を奪え！</div>
+    
+    <div id="shadow-king-info" style="margin: 15px 10px; padding: 20px; border: 1px solid #f00; background: #100; text-align: center; border-radius: 5px;">
+        </div>
+    
+    <button id="btn-challenge-king" onclick="startShadowKingBattle()" style="height:50px; background:#400; border-color:#f00; color:#fff; font-size: 16px; margin-top:10px; font-weight:bold;">玉座に挑む</button>
+    <button onclick="closeShadowKing()" style="height:45px; margin-top:15px;">拠点に戻る</button>
+</div>
+    
     <div id="view-battle" class="view">
         <div id="turn-order"></div>
         <div id="enemy-area" class="unit-area"></div>
@@ -464,7 +476,9 @@ let maxClearedStage = 0, currentEndStage = 50;
 let party = [], enemies = [], stage = 1, queue = [], qIdx = 0, isSelecting = false, currentAction = null, remainingActions = 0; 
 let darumaTrigger = null; 
 let isGlobalDomination = false;
-let selectedBattleSkill = null; 
+let selectedBattleSkill = null;
+let isShadowKingMode = false;
+let currentKingData = null;
 let playerIcon = '👤'; // 現在設定中のアイコン
 let ownedIcons = ['👤']; // 所持しているアイコンの配列（今後の拡張用）
 // ガチャから出る全アイコンのリスト（ここを自由に入れ替えてください）
@@ -1663,7 +1677,12 @@ function next() {
 
         gainPlayerExp(1);
         
-        if (isShadowMode) {
+        if (isShadowKingMode) {
+            addLog(`激闘の末、玉座の主を打ち破った！`);
+            window.claimShadowKing(); // 玉座奪取処理を呼び出す
+            return;
+        }
+        else if (isShadowMode) {
             addLog(`他者の影との手合わせが終了した！`);
             saveData();
             setTimeout(() => location.reload(), 2000);
@@ -1750,8 +1769,7 @@ window.onload = () => {
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-  import { getFirestore, collection, addDoc, getDocs, serverTimestamp, query, orderBy, limit, where, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-
+  import { getFirestore, collection, addDoc, getDocs, serverTimestamp, query, orderBy, limit, where, deleteDoc, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
   const firebaseConfig = {
     apiKey: "AIzaSyD2v_krmy0L-lzvLF6_AdoeI5dbXyJr4JM",
     authDomain: "mojirpg-7ae6b.firebaseapp.com",
@@ -1934,6 +1952,136 @@ window.onload = () => {
     document.getElementById('view-home').classList.add('active');
   };
 
+window.openShadowKing = async function() {
+    if (selectedIds.length === 0) return alert("玉座に挑むためのメンバーを選んでください");
+
+    document.getElementById('view-home').classList.remove('active');
+    document.getElementById('view-shadow-king').classList.add('active');
+    const infoDiv = document.getElementById('shadow-king-info');
+    const btn = document.getElementById('btn-challenge-king');
+
+    infoDiv.innerHTML = "<div style='color:#ff0;'>現在の玉座を確認中...</div>";
+    btn.disabled = true;
+
+    try {
+      // specialコレクションの shadow_king ドキュメントを固定で読み書きする
+      const kingDoc = await getDoc(doc(db, "special", "shadow_king"));
+      if (kingDoc.exists()) {
+        currentKingData = kingDoc.data();
+        const kName = currentKingData.uploader || "名もなき者";
+        const kIcon = currentKingData.uploaderIcon || "👤";
+        const pNames = currentKingData.party.map(p => p.name).join(' / ');
+        const reignStart = currentKingData.createdAt ? new Date(currentKingData.createdAt.toDate()).toLocaleString() : "不明";
+
+        infoDiv.innerHTML = `
+          <div style="font-size: 30px; color: #fff; margin-bottom: 10px; text-shadow: 0 0 10px #ff0;"><span class="shadow-avatar-wrap">${kIcon}</span> ${kName}</div>
+          <div style="font-size: 13px; color: #0ff; margin-bottom: 10px;">防衛編成: ${pNames}</div>
+          <div style="font-size: 11px; color: #aaa;">玉座奪取日時: ${reignStart}</div>
+        `;
+        btn.disabled = false;
+        btn.innerText = "玉座に挑む";
+      } else {
+        currentKingData = null;
+        infoDiv.innerHTML = `
+          <div style="font-size: 18px; color: #aaa; margin-bottom: 10px;">現在、玉座は空席です</div>
+          <div style="font-size: 12px; color: #ff0;">戦闘なしで最初の支配者になれます！</div>
+        `;
+        btn.disabled = false;
+        btn.innerText = "玉座に座る（戦闘なし）";
+      }
+    } catch(e) {
+      console.error(e);
+      infoDiv.innerHTML = "<div style='color:red;'>通信エラーが発生しました</div>";
+    }
+  };
+
+  window.closeShadowKing = function() {
+    document.getElementById('view-shadow-king').classList.remove('active');
+    document.getElementById('view-home').classList.add('active');
+  };
+
+  window.startShadowKingBattle = async function() {
+    if (!currentKingData) {
+      // まだ誰も王座にいない場合は戦闘なしで即奪取
+      await window.claimShadowKing();
+      return;
+    }
+
+    document.getElementById('view-shadow-king').classList.remove('active');
+    document.getElementById('view-battle').classList.add('active');
+    document.getElementById('btn-retreat').style.display = "block";
+
+    isShadowKingMode = true; isShadowMode = false; isBossMode = false; isDigMode = false;
+    remainingActions = 0; darumaTrigger = null; isGlobalDomination = false;
+
+    party = setupBattleData(selectedIds.map(sid => box.find(b => b.id === sid)), true);
+    const kName = currentKingData.uploader || "名もなき者";
+    document.getElementById('header-stage-label').innerText = `玉座防衛戦 - ${kName}`;
+
+    enemies = currentKingData.party.map((c, i) => {
+        let wpBonus = 0;
+        let hasTrueGreyden = false;
+        if (c.equippedWeaponName) {
+            wpBonus = getWeaponBonus(c.equippedWeaponName);
+            if (c.equippedWeaponName === "真・グレイデンの剣") hasTrueGreyden = true;
+        }
+
+        let activeAuras = c.equippedAuras || [];
+        let activeSkills = c.skills || [];
+        if (hasTrueGreyden && !activeSkills.some(s => s.name === 'グレイデンスレイヴ')) {
+            activeSkills.push({ name: 'グレイデンスレイヴ', cost: 0, oncePerMatch: true, used: false });
+        }
+
+        return {
+            ...c, id: 800+i,
+            curH: c.h, maxH: c.h, curM: c.m, maxM: c.m,
+            p: c.p + wpBonus, baseP: c.p + wpBonus, baseS: c.s,
+            isP: false, poison: false, guard: false, charm: 0, lastDmg: 0,
+            auras: activeAuras, skillsList: activeSkills,
+            usedPhoenix: false, blind: 0, paralyze: 0, atkBuff: 0, invincible: 0, deathTrap: false,
+            nextSkillIndex: 0
+        };
+    });
+
+    document.getElementById('log').innerText = "";
+    addLog(`--- 👑玉座の主【 ${kName} 】に挑む！ ---`);
+    cycle();
+  };
+
+  window.claimShadowKing = async function() {
+    const playerName = document.getElementById('player-name').innerText;
+    const playerAvatar = document.getElementById('player-icon').innerHTML;
+
+    const myShadowParty = selectedIds.map(id => {
+      const char = box.find(b => b.id === id);
+      const equippedAuras = (char.auraIds || []).map(aid => auras.find(a => a.id === aid)).filter(Boolean);
+      const equippedWeapon = char.weaponId ? weapons.find(w => w.id === char.weaponId) : null;
+      return {
+        name: char.name, r: char.r, p: char.p, h: char.h, s: char.s, m: char.m,
+        skills: char.skills || [],
+        equippedAuras: equippedAuras,
+        equippedWeaponName: equippedWeapon ? equippedWeapon.name : null
+      };
+    });
+
+    try {
+      addLog("👑玉座の書き換えを実行中...");
+      await setDoc(doc(db, "special", "shadow_king"), {
+        party: myShadowParty,
+        createdAt: serverTimestamp(),
+        uploader: playerName || "名もなき者",
+        uploaderIcon: playerAvatar
+      });
+      addLog(`【成功】あなたが新たな影の支配者となりました！`);
+      saveData();
+      setTimeout(() => location.reload(), 3500);
+    } catch (e) {
+      console.error("玉座奪取エラー: ", e);
+      addLog("通信エラー：玉座の記録に失敗しました...");
+      setTimeout(() => location.reload(), 3500);
+    }
+  };
+    
   // 【追加】初回挨拶オーバーレイを閉じる関数
   window.closeIntro = function() {
       document.getElementById('intro-overlay').style.display = 'none';
