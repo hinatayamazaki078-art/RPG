@@ -246,7 +246,7 @@
             
             <button class="aura-btn" onclick="playAuraGacha()">霊気ガチャ<span>(30枚)</span></button>
             <button class="skill-gacha-btn" onclick="playSkillGacha()">スキルガチャ<span>(20枚)</span></button>
-            <button class="gacha-btn" style="background:#022; border-color:#0cc;" onclick="playIconGacha()">アバターガチャ<span>(50枚)</span></button>
+            <button class="gacha-btn" style="background:#022; border-color:#0cc;" onclick="playIconGacha()">アバターガチャ<span>(20枚)</span></button>
             
             <button style="grid-column: span 2; background: #444; border-color: #f55; color: #fcc; font-size: 12px;" onclick="openInventorySell()">持ち物整理（売却）</button>
             
@@ -1083,7 +1083,7 @@ function playSkillGacha() {
 
 // ▼他のガチャ関数の下あたりに追加してください▼
 function playIconGacha() {
-    const cost = 1; // ガチャの消費コイン
+    const cost = 20; // ガチャの消費コイン
     if (coins < cost) return alert(`コインが不足しています！（必要コイン: ${cost}枚）`);
     coins -= cost; 
     document.getElementById('global-coin-count').innerText = coins;
@@ -1118,7 +1118,7 @@ function playIconGacha() {
                 resultName.innerText = "新アバター獲得！";
             } else {
                 resultName.innerText = "アバター獲得！（重複）";
-                const refund = resultIcon.r * 10; // 被った場合はレア度×10のコイン還元
+                const refund = resultIcon.r * 20; // 被った場合はコイン還元
                 coins += refund;
                 alert(`※既に所持していたため、コイン${refund}枚に変換されました。`);
             }
