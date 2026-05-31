@@ -1364,12 +1364,12 @@ function setupBattleData(arr, isP) {
 
 function selectStageRange(start, end) {
     document.getElementById('view-stage-select').classList.remove('active'); document.getElementById('view-battle').classList.add('active'); document.getElementById('btn-retreat').style.display = "block";
-    isBossMode = false; isBossMode = false; isDigMode = false; isShadowMode = false; isShadowKingMode = false; remainingActions = 0; darumaTrigger = null; isGlobalDomination = false;
+    isBossMode = false; isDigMode = false; isShadowMode = false; isShadowKingMode = false; remainingActions = 0; darumaTrigger = null; isGlobalDomination = false;
     party = setupBattleData(selectedIds.map(sid => box.find(b => b.id === sid)), true); stage = start; currentEndStage = end; initBattle();
 }
 function startBossBattle(name) {
     document.getElementById('view-boss-select').classList.remove('active'); document.getElementById('view-battle').classList.add('active'); document.getElementById('btn-retreat').style.display = "block";
-    isDigMode = false; isShadowMode = false; isShadowKingMode = false; remainingActions = 0; darumaTrigger = null; isGlobalDomination = false;
+    isBossMode = true; currentBossName = name; isDigMode = false; isShadowMode = false; isShadowKingMode = false; remainingActions = 0; darumaTrigger = null; isGlobalDomination = false;
     document.getElementById('header-stage-label').innerText = `強者決戦`;
     party = setupBattleData(selectedIds.map(sid => box.find(b => b.id === sid)), true);
     const base = charData.find(c => c.name === name); const mult = getBossHpMultiplier(name);
