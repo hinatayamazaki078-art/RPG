@@ -461,6 +461,7 @@
             
             <button style="grid-column: span 2; background: #135; border-color: #26a; font-size: 14px;" onclick="openManual()">説明書</button>
             <button style="grid-column: span 2; background: #033; border-color: #0aa; color: #0ff;" onclick="openShadowList()">他者の影に挑む</button>
+            <button style="grid-column: span 2; background: #550; border-color: #aa0; color: #ff0; font-size: 12px;" onclick="openMerchant()">案内人の店</button>
 
             <button style="grid-column: span 2; background: #303; border-color: #a0a; color: #f0f; font-size: 12px;" onclick="uploadMyShadow()">影を刻む</button>
             <button style="grid-column: span 2; background: #300; border-color: #f00; color: #f88; font-size: 12px;" onclick="deleteMyShadow()">影を削除</button>
@@ -479,6 +480,26 @@
         </div>
         <button onclick="closeManual()" style="height:45px; margin-top:15px;">拠点に戻る</button>
     </div>
+
+    <div id="view-merchant" class="view">
+    <h2 style="color:#ff0;">案内人の店</h2>
+    
+    <!-- 案内人のセリフエリア -->
+    <div style="display:flex; flex-direction:column; align-items:center; margin: 10px 0; padding: 15px; border: 1px solid #770; background: #110; border-radius: 5px;">
+        <img src="annainin.png" alt="案内人" style="width: 80px; height: 80px; object-fit: contain; margin-bottom: 10px; filter: drop-shadow(0 0 5px rgba(255, 255, 0, 0.5));">
+        <div style="font-size: 13px; color: #fff; text-align: center; line-height: 1.5;">
+            『ガラクタしかないが、タダにはならねぇ・・・。』
+        </div>
+    </div>
+    
+    <!-- 商品一覧エリア（現在は空） -->
+    <div class="section-title">【商品一覧】</div>
+    <div id="merchant-item-list" style="height: 200px; border: 1px solid #333; background: #050505; display: flex; justify-content: center; align-items: center; color: #666; font-size: 12px;">
+        現在は何も売られていないようだ...。
+    </div>
+
+    <button onclick="closeMerchant()" style="height:45px; margin-top:15px;">拠点に戻る</button>
+</div>
 
     <div id="view-stage-select" class="view">
         <h2>作戦領域選択</h2>
@@ -2359,6 +2380,21 @@ function updateUI() {
     document.getElementById('enemy-area').innerHTML = enemies.map(draw).join('');
 }
 
+// --- ショップ（商人の店）機能 ---
+function openMerchant() {
+    // 全てのビューを非表示にする
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    // ショップのビューを表示する
+    document.getElementById('view-merchant').classList.add('active');
+}
+
+function closeMerchant() {
+    // ショップのビューを非表示にする
+    document.getElementById('view-merchant').classList.remove('active');
+    // 拠点のビューを表示する
+    document.getElementById('view-home').classList.add('active');
+}
+    
 function addLog(msg) {
     const l = document.getElementById('log'); l.innerHTML += `<div>${msg}</div>`; l.scrollTop = l.scrollHeight;
 }
