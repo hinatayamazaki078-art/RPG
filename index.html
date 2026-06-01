@@ -2408,6 +2408,24 @@ function closeMerchant() {
     // 拠点のビューを表示する
     document.getElementById('view-home').classList.add('active');
 }
+
+// レアリティ表示用のHTMLを生成する関数
+function getRarityStarsHTML(rarityLevel) {
+    const rarity = parseInt(rarityLevel, 10); // 念のため確実に数値にする
+
+    if (rarity <= 7) {
+        // ★1〜★7: 黄色の星
+        // 黄色（ゴールド系）のカラーコードを指定
+        return `<span style="color: #FFD700;">${'★'.repeat(rarity)}</span>`;
+    } else {
+        // ★8以降: ピンク（紫）の星
+        // ★8の時にピンク★1になるように、7を引く
+        const pinkStarCount = rarity - 7;
+        
+        // 画像のような紫がかったピンクのカラーコードを指定
+        return `<span style="color: #9C27B0;">${'★'.repeat(pinkStarCount)}</span>`; 
+    }
+}
     
 function addLog(msg) {
     const l = document.getElementById('log'); l.innerHTML += `<div>${msg}</div>`; l.scrollTop = l.scrollHeight;
