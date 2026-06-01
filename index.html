@@ -59,6 +59,8 @@
         .rarity-god7 { text-shadow: 0 0 45px #f00, 0 0 25px #ff8 !important; color: #fff; animation: god7-glow 0.8s infinite alternate; }
         @keyframes god-glow { from { text-shadow: 0 0 20px #f0f, 0 0 10px #ff0; } to { text-shadow: 0 0 40px #ff0, 0 0 20px #f0f; } }
         @keyframes god7-glow { from { text-shadow: 0 0 30px #f00, 0 0 15px #ff0; } to { text-shadow: 0 0 60px #ff8, 0 0 30px #f00, 0 0 15px #fff; } }
+　　　　.rarity-pink { text-shadow: 0 0 25px #ff66b2, 0 0 10px #ff3385 !important; color: #ff99cc; animation: pulse-pink 1s infinite alternate; }
+        @keyframes pulse-pink { from { text-shadow: 0 0 15px #ff66b2; } to { text-shadow: 0 0 40px #ff3385, 0 0 20px #fff; } }
         
         #gacha-result-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; width: 90%; margin-top: 10px; }
         .gacha-res-item { width: 60px; height: 60px; background: #111; border: 1px solid #444; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 16px; position: relative; text-align: center; }
@@ -451,33 +453,37 @@
         <div class="section-title">【所持している装具（武器）】</div>
         <div id="weapon-box" class="box-list" style="max-height: 130px; overflow-y: auto;"></div>
 
+        ```html
         <div class="controls" style="grid-template-columns: repeat(4, 1fr); grid-template-rows: auto; margin-top: 10px; gap: 4px;">
+            <button style="grid-column: span 4; background: #202; border-color: #d0d; font-size: 15px; font-weight: bold; height: 40px;" onclick="openGachaList()">🔮 召喚の間（ガチャ一覧）</button>
+            
+            <button style="grid-column: span 4; background: #444; border-color: #f55; color: #fcc; font-size: 12px;" onclick="openInventorySell()">持ち物整理（売却）</button>
+            ```
+
+そして、`<div id="view-home" class="view active">...</div>` の**すぐ下**に、新しいガチャ一覧ページを追加します。
+
+```html
+    <div id="view-gacha-list" class="view">
+        <h2 style="color:#d0d;">召喚の間</h2>
+        <div class="guide-text">※己の運を試し、新たな力を手に入れよ</div>
+        <div class="controls" style="grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; height: auto;">
+            
             <button id="btn-gacha-normal-single" class="gacha-btn" onclick="playGacha(1)">通常単発<span>(10枚)</span></button>
             <button class="gacha-btn" onclick="playGacha(10)">通常10連<span>(100枚)</span></button>
             <button class="gacha-btn" style="background:#402; border-color:#d0d;" onclick="playPremiumGacha(1)">上級単発<span>(100枚)</span></button>
             <button class="gacha-btn" style="background:#503; border-color:#f0f;" onclick="playPremiumGacha(10)">上級10連<span>(1000枚)</span></button>
             
-            <button class="aura-btn" onclick="playAuraGacha()">霊気ガチャ<span>(30枚)</span></button>
-            <button class="skill-gacha-btn" onclick="playSkillGacha()">スキルガチャ<span>(20枚)</span></button>
-            <button class="gacha-btn" style="background:#022; border-color:#0cc;" onclick="playIconGacha()">アバターガチャ<span>(20枚)</span></button>
+            <button class="gacha-btn" style="background:#600; border-color:#f55;" onclick="playExtremeGacha(1)">極級単発<span>(1000枚)</span></button>
+            <button class="gacha-btn" style="background:#800; border-color:#f55; box-shadow: 0 0 5px #f00;" onclick="playExtremeGacha(10)">極級10連<span>(10000枚)</span></button>
             
-            <button class="gacha-btn" style="background:#404; border-color:#f0f;" onclick="playCrystalGacha()">具現ガチャ<span>(5万枚)</span></button>
-            <button style="grid-column: span 2; background: #444; border-color: #f55; color: #fcc; font-size: 12px;" onclick="openInventorySell()">持ち物整理（売却）</button>
+            <button class="aura-btn" style="grid-column: span 2;" onclick="playAuraGacha()">霊気ガチャ<span>(30枚)</span></button>
+            <button class="skill-gacha-btn" style="grid-column: span 2;" onclick="playSkillGacha()">スキルガチャ<span>(20枚)</span></button>
             
-            <button class="boss-btn" style="grid-column: span 2;" onclick="openBossSelection()">強者の間</button>
-            <button class="dig-btn" style="grid-column: span 2;" onclick="openDigSelection()">発掘開始</button>
-            
-            <button style="grid-column: span 2; background: #135; border-color: #26a; font-size: 14px;" onclick="openManual()">説明書</button>
-            <button style="grid-column: span 2; background: #033; border-color: #0aa; color: #0ff;" onclick="openShadowList()">他者の影に挑む</button>
-
-            <button style="grid-column: span 2; background: #303; border-color: #a0a; color: #f0f; font-size: 12px;" onclick="uploadMyShadow()">影を刻む</button>
-            <button style="grid-column: span 2; background: #300; border-color: #f00; color: #f88; font-size: 12px;" onclick="deleteMyShadow()">影を削除</button>
-            
-            <button style="grid-column: span 4; background: #500; border-color: #f00; color: #ff0; font-size: 15px; font-weight: bold; text-shadow: 0 0 5px #f00;" onclick="openShadowKing()">👑 影ノ支配（玉座）に挑む</button>
-            <button id="btn-start" style="grid-column: span 4;" onclick="openStageSelection()">戦場出撃</button>
+            <button class="gacha-btn" style="grid-column: span 2; background:#022; border-color:#0cc;" onclick="playIconGacha()">アバターガチャ<span>(20枚)</span></button>
+            <button class="gacha-btn" style="grid-column: span 2; background:#404; border-color:#f0f;" onclick="playCrystalGacha()">具現ガチャ<span>(5万枚)</span></button>
         </div>
+        <button onclick="closeGachaList()" style="height:45px; margin-top:20px; width:100%;">拠点に戻る</button>
     </div>
-
     <div id="view-manual" class="view">
         <h2 style="color:#0f0;">説明書</h2>
         <div style="padding: 15px; font-size: 13px; line-height: 1.8; background: #111; border: 1px solid #333; flex-grow: 1;">
@@ -772,6 +778,8 @@ const charData = [
     { name: '天照', r: 5, p: 30, h: 35, m: 20, s: 8, skill: "神の審判", cost: 10 },
     { name: '宿灘', r: 7, p: 45, h: 50, m: 20, s: 12, skill: "伏魔御廚子", cost: 20 },
     { name: 'サイタマ', r: 7, p: 60, h: 50, m: 15, s: 20, skill: "マジ殴り", cost: 40 }
+    { name: '神龍', r: 8, p: 70, h: 85, m: 50, s: 25, skill: "輝炎ノ息", cost: 30 },
+    { name: '虚無王', r: 9, p: 85, h: 90, m: 50, s: 35, skill: "虚影", cost: 20 }
 ];
 
 const SKILL_DATA = {
@@ -781,7 +789,7 @@ const SKILL_DATA = {
     "妖精の粉": { cost: 15 }, "メテオ": { cost: 20 }, "デストラップ": { cost: 3 },
     "フェニックス": { cost: 20 }, "蘇りの歌": { cost: 50 }, "強固な甲羅": { cost: 5 },
     "天変地異": { cost: 50 }, "デスペラードヒューリー": { cost: 100 }, "精霊の歌": { cost: 0 },
-    "グレイデンスレイヴ": { cost: 0 }
+    "グレイデンスレイヴ": { cost: 0 },　"輝炎ノ息": { cost: 30 }, "虚影": { cost: 20 }
 };
 
 const auraTypes = ['回避', '行動力', '会心', '回復'];
@@ -1379,6 +1387,88 @@ function playIconGacha() {
         }
     }, 40); // 演出のスピード
 }
+
+// ピンク★を描画するためのヘルパー関数
+function getRarityString(r) {
+    if (r === 8) return '<span style="color:#ff66b2;">★</span>';
+    if (r === 9) return '<span style="color:#ff66b2;">★★</span>';
+    return '★'.repeat(r);
+}
+
+// ガチャ一覧の開閉
+function openGachaList() {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-gacha-list').classList.add('active');
+}
+function closeGachaList() {
+    document.getElementById('view-gacha-list').classList.remove('active');
+    document.getElementById('view-home').classList.add('active');
+    updateHomeUI();
+}
+
+// 極級ガチャの処理
+function playExtremeGacha(times) {
+    const cost = times === 10 ? 10000 : 1000;
+    if (coins < cost) return alert(`コインが不足しています！`); 
+    coins -= cost; 
+    document.getElementById('global-coin-count').innerText = coins;
+    
+    openGachaOverlay(""); 
+    const display = document.getElementById('gacha-kanji-display');
+    let currentPull = 0;
+    
+    const pullNextExtreme = () => {
+        if (currentPull >= times) {
+            display.style.display = 'none'; 
+            document.getElementById('gacha-result-name').innerText = "── 極級召喚結果 ──";
+            document.getElementById('gacha-close-btn').style.display = 'block'; 
+            saveData(); return;
+        }
+        let count = 0; 
+        document.getElementById('gacha-result-name').innerText = `${currentPull + 1} 体目の極位召喚中...`;
+        
+        const interval = setInterval(() => {
+            const randDisp = charData[Math.floor(Math.random() * charData.length)];
+            display.innerHTML = `<span style="font-size:${randDisp.name.length >= 4 ? '40px' : '120px'};">${randDisp.name}</span>`;
+            count++;
+            if (count > 15) {
+                clearInterval(interval); 
+                let selectedRarity = 5; 
+                const roll = Math.random() * 100;
+                
+                // 確率設定：★5(70%), ★6(20%), ★7(8%), ピンク★1(1.5%), ピンク★2(0.5%)
+                if (roll < 70.0) selectedRarity = 5; 
+                else if (roll < 90.0) selectedRarity = 6; 
+                else if (roll < 98.0) selectedRarity = 7; 
+                else if (roll < 99.5) selectedRarity = 8; // 神龍
+                else selectedRarity = 9; // 虚無王
+                
+                const pool = charData.filter(c => c.r === selectedRarity); 
+                const base = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : charData.find(c => c.r === 7);
+                const newUnit = {...base, id: Math.random(), auraId: null, auraIds: [], weaponId: null}; 
+                box.push(newUnit);
+                
+                display.innerHTML = `<span style="font-size:${base.name.length >= 4 ? '50px' : '120px'};">${base.name}</span>`; display.className = "";
+                
+                let borderCol = '#ff0', textCol = '#ff0';
+                if (base.r >= 8) { 
+                    display.classList.add('rarity-pink'); 
+                    borderCol = '#ff66b2'; textCol = '#ff99cc'; 
+                } else if (base.r === 7) { 
+                    display.classList.add('rarity-god7'); borderCol = '#f00'; textCol = '#faa'; 
+                } else if (base.r === 6) { 
+                    display.classList.add('rarity-god'); borderCol = '#f0f'; textCol = '#f0f'; 
+                } else { 
+                    display.classList.add('rarity-high'); 
+                }
+                
+                document.getElementById('gacha-result-list').innerHTML += `<div class="gacha-res-item" style="color:${textCol}; border-color:${borderCol}"><span class="rarity">${getRarityString(base.r)}</span><span>${base.name}</span></div>`;
+                currentPull++; setTimeout(pullNextExtreme, 200);
+            }
+        }, 40);
+    }; 
+    pullNextExtreme();
+}
     
 function playGacha(times) {
     let cost = times === 10 ? 100 : 10;
@@ -1838,7 +1928,8 @@ function setupBattleData(arr, isP) {
             ...c, curH: c.h, maxH: c.h, curM: c.m, maxM: c.m, p: c.p + wpBonus, baseP: c.p + wpBonus, baseS: c.s, 
             isP: isP, poison: false, guard: false, charm: 0, lastDmg: 0, 
             auras: activeAuras, skillsList: activeSkills, 
-            usedPhoenix: false, blind: 0, paralyze: 0, atkBuff: 0, invincible: 0, deathTrap: false,
+            usedPhoenix: false, blind: 0, paralyze: 0, atkBuff: 0, invincible: 0, deathTrap: false,nextSkillIndex: 0, 
+        evasionBuff: 0
             nextSkillIndex: 0
         };
     });
@@ -1916,7 +2007,7 @@ async function turn() {
     if (u.paralyze > 0) { u.paralyze--; addLog(`⚡ ${u.name}は麻痺して動けない！`); return next(); }
     if (u.deathTrap) { if (Math.random() < 0.1) { u.curH = Math.max(0, u.curH - 20); addLog(`☠️【デストラップ】${u.name}に20ダメ！`); checkAndRevivePhoenix(u); if (u.curH <= 0) return next(); } }
 
-    if (u.blind > 0) u.blind--; if (u.atkBuff > 0) u.atkBuff--; if (u.invincible > 0) u.invincible--;
+    if (u.blind > 0) u.blind--; if (u.atkBuff > 0) u.atkBuff--; if (u.invincible > 0) u.invincible--;　if (u.evasionBuff > 0) u.evasionBuff--;
 
     if (remainingActions <= 0) {
         remainingActions = 1; 
@@ -2033,7 +2124,7 @@ function startTargetSelection(type, skillName = null) {
     const sName = skillName || (u.skillsList && u.skillsList[0] ? u.skillsList[0].name : u.skill);
     
     if (type === 'skill') { 
-        let isAoE = ['感電','咆哮','鱗粉','御廚子','巨大触手','炎のブレス','伏魔御廚子','達磨さんが転んだ','ムチ','ブリザード','妖精の粉','攻撃増幅薬','蘇りの歌','強固な甲羅','天変地異','デスペラードヒューリー','支配','グレイデンスレイヴ'].includes(sName);
+        let isAoE = ['感電','咆哮','輝炎ノ息','虚影','鱗粉','御廚子','巨大触手','炎のブレス','伏魔御廚子','達磨さんが転んだ','ムチ','ブリザード','妖精の粉','攻撃増幅薬','蘇りの歌','強固な甲羅','天変地異','デスペラードヒューリー','支配','グレイデンスレイヴ'].includes(sName);
         if (isAoE) return executeAction(u, null, 'skill', sName);
     }
     
@@ -2058,6 +2149,8 @@ function executeAction(u, t, type, skillName = null) {
        u.curM += 3;
 
         if (u.blind > 0 && Math.random() < 0.3) { addLog("💫【閃光】" + u.name + "の攻撃は外れた！ (MP+3)"); return next(); }
+
+        if (t.evasionBuff > 0 && Math.random() < 0.5) isEvaded = true;
         
         let isEvaded = false;
         if (t.auras) {
@@ -2148,6 +2241,21 @@ function executeAction(u, t, type, skillName = null) {
         else if (sName === '毒牙' || sName === '猛毒') { t.poison = true; addLog(t.name + "を致命的な毒にした！"); }
         else if (sName === '甘い蜜') { t.curH = Math.min(t.maxH, t.curH + 3); addLog(t.name + "が3回復！"); }
         else if (sName === '丸呑み') { if(t.invincible<=0) { t.curH = Math.max(0, t.curH - 15); addLog(t.name + "に15の固定ダメージ！"); checkAndRevivePhoenix(t); } }
+        else if (sName === '輝炎ノ息') { 
+         targets.forEach(e => { 
+             if(e.curH>0 && e.invincible<=0) { 
+                 e.curH = Math.max(0, e.curH - 60); 
+                 checkAndRevivePhoenix(e); 
+             } 
+         }); 
+         addLog("灼熱の輝炎！全体に60ダメージ！"); 
+     }
+     else if (sName === '虚影') { 
+         allies.forEach(a => { 
+             if(a.curH>0) a.evasionBuff = 3; 
+         }); 
+         addLog("虚無の影が包み込む！味方全員の回避率が大幅アップ！(3ターン)"); 
+     }
     }
     selectedBattleSkill = null;
     next();
@@ -2225,6 +2333,7 @@ function updateUI() {
         if (u.poison) badgeHtml += '<span style="color:#0f0; font-size:10px;">[毒]</span>';
         if (u.paralyze > 0) badgeHtml += '<span style="color:#ff0; font-size:10px;">[痺]</span>';
         if (u.deathTrap) badgeHtml += '<span style="color:#a0a; font-size:10px;">[死]</span>';
+     if (u.evasionBuff > 0) badgeHtml += '<span style="color:#0ff; font-size:10px;">[避↑]</span>'; // ←追加
         
         return `<div class="${classes}" onclick="onUnitClick(${u.id})">
     <div class="kanji ${auraClass}" style="font-size:28px; ${auraStyle}">${u.name}</div>
