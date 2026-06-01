@@ -151,18 +151,190 @@
             object-fit: contain !important;
             vertical-align: middle !important;
         }
+   /* --- オープンチャット用スタイル --- */
+/* 右上のチャット起動ボタン（画面右上に絶対配置） */
+#chat-open-btn {
+    position: absolute;
+    top: 45px; /* グローバル情報エリアの下あたりに配置 */
+    right: 12px;
+    background: #111;
+    color: #0ff;
+    border: 1px solid #0ff;
+    padding: 3px 8px;
+    font-family: inherit;
+    font-size: 11px;
+    cursor: pointer;
+    z-index: 99;
+    box-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
+}
+#chat-open-btn:hover {
+    background: #0ff;
+    color: #000;
+}
+
+/* チャットのオーバーレイ背景 */
+#chat-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
+    padding: 10px;
+}
+
+/* チャット画面のコンテナ */
+.chat-container {
+    width: 100%;
+    height: 85%;
+    background: #050505;
+    border: 2px solid #333;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+
+/* チャットヘッダー */
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    background: #111;
+    border-bottom: 1px solid #333;
+}
+.chat-title {
+    font-size: 12px;
+    color: #fff;
+    font-weight: bold;
+}
+.chat-close-btn {
+    background: none;
+    border: none;
+    color: #aaa;
+    font-size: 16px;
+    cursor: pointer;
+}
+.chat-close-btn:hover {
+    color: #fff;
+}
+
+/* メッセージ表示部分（スクロール可能） */
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 11px;
+}
+
+/* 各メッセージの枠 */
+.chat-msg {
+    background: #111;
+    padding: 6px;
+    border-radius: 3px;
+    border-left: 3px solid #555;
+}
+/* 自分の発言のハイライト */
+.chat-msg.me {
+    border-left: 3px solid #0ff;
+    background: #0a1515;
+}
+.chat-msg-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: #888;
+    margin-bottom: 2px;
+}
+.chat-msg-user {
+    color: #ff0;
+    font-weight: bold;
+}
+.chat-msg-text {
+    word-break: break-all;
+    color: #eee;
+    line-height: 1.3;
+}
+
+/* 入力エリア */
+.chat-input-area {
+    display: flex;
+    padding: 8px;
+    background: #111;
+    border-top: 1px solid #333;
+    gap: 6px;
+}
+#chat-input {
+    flex: 1;
+    background: #000;
+    border: 1px solid #444;
+    color: #fff;
+    padding: 5px;
+    font-family: inherit;
+    font-size: 11px;
+}
+#chat-input:focus {
+    border-color: #0ff;
+    outline: none;
+}
+.chat-input-area button {
+    background: #222;
+    color: #fff;
+    border: 1px solid #555;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+}
+.chat-input-area button:hover {
+    background: #fff;
+    color: #000;
+    border-color: #fff;
+}
+    
     </style>
 </head>
 <body>
 
 <div id="game-screen">
-   
-    <!-- ▼ここに追加！▼ -->
-   <div id="player-profile" style="display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #333; margin-bottom: 5px;">
+    
+    <div id="player-profile" style="display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #333; margin-bottom: 5px;">
         <div id="player-icon" style="margin-right: 5px; cursor: pointer; padding: 2px 5px; border: 1px dashed #555; border-radius: 4px;" onclick="openIconSelect()">👤</div>
         <div id="player-name" style="font-size: 16px; color: #fff; margin-right: 15px; cursor: pointer; padding: 5px;" onclick="changeName()">名もなき者</div>
         <div id="player-level-display" style="font-size: 14px; color: #ff0; font-weight: bold;">Lv.1 (0/10)</div>
     </div>
+
+    <button id="chat-open-btn" onclick="toggleChat(true)">💬 雑談</button>
+
+    <div id="chat-overlay" style="display: none;">
+        <div class="chat-container">
+            <div class="chat-header">
+                <span class="chat-title">📜 漢字ノ通信（オープンチャット）</span>
+                <button class="chat-close-btn" onclick="toggleChat(false)">✕</button>
+            </div>
+            <div id="chat-messages" class="chat-messages"></div>
+            <div class="chat-input-area">
+                <input type="text" id="chat-input" placeholder="メッセージを入力（最大50文字）" maxlength="50" onkeydown="if(event.key==='Enter') sendChatMessage()">
+                <button onclick="sendChatMessage()">送信</button>
+            </div>
+        </div>
+    </div>
+
+</div> <script>
+    // JavaScriptコード...
+</script>
+
+</body>
+</html>
 
     <div id="view-icon-select" class="view">
         <h2>アバター変更</h2>
@@ -1813,6 +1985,122 @@ function onUnitClick(targetId) {
     executeAction(queue[qIdx], target, currentAction, sName); isSelecting = false; currentAction = null;
 }
 
+// ==========================================
+// オープンチャット機能（追加分JS）
+// ==========================================
+let chatUnsubscribe = null;
+
+// チャット画面の開閉切り替え
+window.toggleChat = function(show) {
+    const overlay = document.getElementById('chat-overlay');
+    overlay.style.display = show ? 'flex' : 'none';
+    
+    if (show) {
+        // 開いた時にリアルタイム監視を開始
+        initChatListener();
+    } else {
+        // 閉じたら監視を解除（負荷軽減）
+        if (chatUnsubscribe) {
+            chatUnsubscribe();
+            chatUnsubscribe = null;
+        }
+    }
+};
+
+// リアルタイムリスナーの初期化
+function initChatListener() {
+    if (chatUnsubscribe) return;
+    
+    try {
+        // Firestoreから最新の40件を降順で取得
+        chatUnsubscribe = db.collection('open_chats')
+            .orderBy('createdAt', 'desc')
+            .limit(40)
+            .onSnapshot(snapshot => {
+                const messagesContainer = document.getElementById('chat-messages');
+                messagesContainer.innerHTML = '';
+                
+                // 表示時は古い順（下に向かってタイムラインが進む）にするため配列を反転
+                const docs = [];
+                snapshot.forEach(doc => docs.unshift({ id: doc.id, ...doc.data() }));
+                
+                // 現在のプレイヤー名を取得（コード内の実変数名に合わせて調整してください）
+                let currentName = '自分';
+                if (typeof player !== 'undefined' && player.name) {
+                    currentName = player.name;
+                } else if (typeof gameState !== 'undefined' && gameState.playerName) {
+                    currentName = gameState.playerName;
+                }
+                
+                docs.forEach(data => {
+                    const msgDiv = document.createElement('div');
+                    msgDiv.className = 'chat-msg';
+                    
+                    // 自分の発言であればクラスを付与
+                    if (data.sender === currentName) {
+                        msgDiv.classList.add('me');
+                    }
+                    
+                    // タイムスタンプの整形
+                    const timeStr = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+                    
+                    msgDiv.innerHTML = `
+                        <div class="chat-msg-meta">
+                            <span class="chat-msg-user">【${escapeChatHtml(data.sender)}】</span>
+                            <span class="chat-msg-time">${timeStr}</span>
+                        </div>
+                        <div class="chat-msg-text">${escapeChatHtml(data.text)}</div>
+                    `;
+                    messagesContainer.appendChild(msgDiv);
+                });
+                
+                // 常に最新メッセージ（最下部）へスクロール
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }, error => {
+                console.error("チャット同期エラー: ", error);
+            });
+    } catch (e) {
+        console.error("チャット初期化に失敗しました。Firebaseの接続を確認してください。", e);
+    }
+}
+
+// メッセージの送信処理
+window.sendChatMessage = async function() {
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim();
+    if (!text) return;
+    
+    // 現在のプレイヤー名を取得（設定されていない場合はデフォルト名）
+    let senderName = '名無しの旅人';
+    if (typeof player !== 'undefined' && player.name) {
+        senderName = player.name;
+    } else if (typeof gameState !== 'undefined' && gameState.playerName) {
+        senderName = gameState.playerName;
+    }
+    
+    try {
+        await db.collection('open_chats').add({
+            sender: senderName,
+            text: text,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        input.value = ''; // 送信成功したら入力欄をクリア
+    } catch (e) {
+        console.error("チャット送信エラー: ", e);
+        alert("通信エラー：メッセージの送信に失敗しました。");
+    }
+};
+
+// 安全のためのHTMLエスケープ関数
+function escapeChatHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#39;');
+}
+    
 function executeAction(u, t, type, skillName = null) {
     if (type === 'attack') {
        u.curM += 3;
