@@ -563,6 +563,7 @@
     <button onclick="closeShadowKing()" style="height:45px; margin-top:15px;">拠点に戻る</button>
 </div>
     
+    ```html
     <div id="view-battle" class="view">
         <div id="turn-order"></div>
         <div id="enemy-area" class="unit-area"></div>
@@ -574,9 +575,9 @@
             <button id="btn-skl" onclick="showSkillMenu()">スキル</button>
         </div>
         <div id="skill-select-controls" class="controls" style="margin-top:5px; grid-template-columns: repeat(2, 1fr); display:none; height:auto; min-height:55px; gap:4px;"></div>
+    </div> 
+    
     </div>
-</div>
-
 <script>
 // ↓他の定数（const SKILL_DATA など）の近くにこれを追加してください
 const ICON_DATA = [
@@ -1397,13 +1398,17 @@ function getRarityString(r) {
 
 // ガチャ一覧の開閉
 function openGachaList() {
+    // すべての画面を非表示にする
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    // ガチャ一覧だけを表示する
     document.getElementById('view-gacha-list').classList.add('active');
 }
+
 function closeGachaList() {
     document.getElementById('view-gacha-list').classList.remove('active');
+    // 拠点（ホーム）画面に戻す
     document.getElementById('view-home').classList.add('active');
-    updateHomeUI();
+    updateHomeUI(); // 必要に応じて更新
 }
 
 // 極級ガチャの処理
