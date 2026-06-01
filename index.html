@@ -275,6 +275,14 @@
     padding: 2px 5px;
     border-radius: 4px;
 }
+        /* チャット内のアバター画像のサイズ指定 */
+.chat-msg-avatar img {
+    width: 30px !important;    /* 横幅を30pxに設定 */
+    height: 30px !important;   /* 縦幅を30pxに設定 */
+    object-fit: cover;         /* 画像が歪まないように調整 */
+    display: inline-block;
+    vertical-align: middle;
+}
 
 /* 入力エリア */
 .chat-input-area {
