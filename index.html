@@ -348,17 +348,12 @@
 <body>
 
 <div id="game-screen">
-
-    <div id="effect-layer"></div>
-    
-    ...
-</div>
     
     <div id="player-profile" style="display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #333; margin-bottom: 5px;">
         <div id="player-icon" style="margin-right: 5px; cursor: pointer; padding: 2px 5px; border: 1px dashed #555; border-radius: 4px;" onclick="openIconSelect()">👤</div>
         <div id="player-name" style="font-size: 16px; color: #fff; margin-right: 15px; cursor: pointer; padding: 5px;" onclick="changeName()">名もなき者</div>
         <div id="player-level-display" style="font-size: 14px; color: #ff0; font-weight: bold;">Lv.1 (0/10)</div>
-       
+        <div id="effect-layer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100;"></div>
     </div>
 
     <button id="chat-open-btn" onclick="toggleChat(true)">💬 雑談</button>
@@ -2052,7 +2047,8 @@ function onUnitClick(targetId) {
     
 function executeAction(u, t, type, skillName = null) {
     if (type === 'attack') {
-        u.curM += 3;
+       u.curM += 3;
+
         if (u.blind > 0 && Math.random() < 0.3) { addLog("💫【閃光】" + u.name + "の攻撃は外れた！ (MP+3)"); return next(); }
         
         let isEvaded = false;
@@ -2071,28 +2067,15 @@ function executeAction(u, t, type, skillName = null) {
         }
         if (t.guard) dmg = 1;
         t.curH = Math.max(0, t.curH - dmg); u.lastDmg = dmg;
-        
-        if (isCrit) {
-            playEffect('critical');
-            addLog("💥" + u.name + "の会心の一撃：" + dmg + "ダメ (MP+3)");
-        } else {
-            playEffect('attack');
-            addLog(u.name + "の攻撃：" + dmg + "ダメ (MP+3)");
-        }
+        if (isCrit) addLog("💥" + u.name + "の会心の一撃：" + dmg + "ダメ (MP+3)"); else addLog(u.name + "の攻撃：" + dmg + "ダメ (MP+3)");
         checkAndRevivePhoenix(t);
     } else {
-        // --- ★ここから else の中身です ---
         const sName = skillName || u.skill;
         let costM = SKILL_DATA[sName] ? SKILL_DATA[sName].cost : 0;
         if (sName === '捨て身') u.curH -= 5; else if (sName === '精霊の歌') u.curH -= Math.max(1, Math.floor(u.curH / 2)); else u.curM -= costM;
         
         addLog(u.name + "：【" + sName + "】"); const targets = u.isP ? enemies : party; const allies = u.isP ? party : enemies;
         
-        // 【エフェクトの自動呼び出し】（お好みで追加）
-        if (['回復', '大回復', '妖精の粉', '甘い蜜', '賢者の知恵'].includes(sName)) playEffect('heal');
-        else if (['フェニックス', '蘇りの歌', '精霊の歌'].includes(sName)) playEffect('revive');
-        else if (['毒牙', '猛毒'].includes(sName)) playEffect('poison');
-
         if (sName === '回復') { t.curH = Math.min(t.maxH, t.curH + Math.floor(t.maxH*0.3)); addLog(t.name + "が30%回復！"); }
         else if (sName === '閃光') { t.blind = 1; addLog(t.name + "の命中率が低下！"); }
         else if (sName === '斬撃') { if(t.invincible>0) addLog("無効！"); else { t.curH = Math.max(0, t.curH - 5); checkAndRevivePhoenix(t); addLog(t.name+"に5ダメ！");} }
@@ -2130,11 +2113,22 @@ function executeAction(u, t, type, skillName = null) {
         else if (sName === '連撃') { if(t.invincible<=0) { let d1 = u.p; t.curH = Math.max(0, t.curH - d1); checkAndRevivePhoenix(t); let d2 = u.p; t.curH = Math.max(0, t.curH - d2); checkAndRevivePhoenix(t); u.lastDmg = d1 + d2; addLog(`連続斬撃！ ${t.name}に ${d1}、${d2} ダメージ！`); } }
         else if (sName === 'マジ殴り') { if(t.invincible<=0) { t.curH = Math.max(0, t.curH - 200); addLog(`必殺のマジ殴り！ ${t.name}に200ダメ！`); checkAndRevivePhoenix(t); } }
         else if (sName === 'イーター') { if(t.invincible<=0) { t.curH = Math.max(0, t.curH - 30); u.curH = Math.min(u.maxH, u.curH + 30); addLog(`魂を喰らう！ 30ダメ＆30回復！`); checkAndRevivePhoenix(t); } }
-        else if (sName === '魅了') { if (Math.random() < 0.3) { t.charm = 2; addLog(`💘 ${t.name}を魅了した！`); } else { addLog(`💨 ${t.name}には魅了が効かなかった...`); } }
+        else if (sName === '魅了') { 
+            if (Math.random() < 0.3) {
+                t.charm = 2; addLog(`💘 ${t.name}を魅了した！`); 
+            } else {
+                addLog(`💨 ${t.name}には魅了が効かなかった...`);
+            }
+        } 
         else if (sName === 'グレイデンスレイヴ') {
             const skillObj = u.skillsList && u.skillsList.find(sk => sk.name === 'グレイデンスレイヴ');
             if (skillObj) skillObj.used = true;
-            targets.forEach(e => { if (e.curH > 0 && e.invincible <= 0) { e.curH = Math.max(0, e.curH - 30); checkAndRevivePhoenix(e); } });
+            targets.forEach(e => {
+                if (e.curH > 0 && e.invincible <= 0) {
+                    e.curH = Math.max(0, e.curH - 30);
+                    checkAndRevivePhoenix(e);
+                }
+            });
             addLog("真の力が解放された！全体に30ダメージ！");
         }
         else if (sName === '吸血') { u.curH = Math.min(u.maxH, u.curH + 3); }
@@ -2146,9 +2140,7 @@ function executeAction(u, t, type, skillName = null) {
         else if (sName === '毒牙' || sName === '猛毒') { t.poison = true; addLog(t.name + "を致命的な毒にした！"); }
         else if (sName === '甘い蜜') { t.curH = Math.min(t.maxH, t.curH + 3); addLog(t.name + "が3回復！"); }
         else if (sName === '丸呑み') { if(t.invincible<=0) { t.curH = Math.max(0, t.curH - 15); addLog(t.name + "に15の固定ダメージ！"); checkAndRevivePhoenix(t); } }
-        // --- ★ここまでが else の中身 ---
     }
-    
     selectedBattleSkill = null;
     next();
 }
