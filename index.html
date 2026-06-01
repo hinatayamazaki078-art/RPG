@@ -237,60 +237,45 @@
 }
 
 /* 各メッセージの枠 */
-/* --- チャットのデザイン修正 --- */
 .chat-msg {
-    margin-bottom: 15px;
+    background: #111;
+    padding: 6px;
+    border-radius: 3px;
+    border-left: 3px solid #555;
+}
+/* 自分の発言のハイライト */
+.chat-msg.me {
+    border-left: 3px solid #0ff;
+    background: #0a1515;
+}
+.chat-msg-meta {
     display: flex;
-    align-items: flex-start; /* アバターと本文を左上基準で揃える */
-}
-
-/* アバターのコンテナ */
-.chat-msg-avatar {
-    width: 40px;
-    height: 40px;
-    flex-shrink: 0; /* アバターが縮まないようにする */
-    margin-right: 10px;
-    border: 1px solid #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-}
-
-/* アバター画像 */
-.chat-msg-avatar img {
-    width: 150%;  /* ここを調整して好みのサイズに！ */
-    height: 150%; /* ここを調整して好みのサイズに！ */
-    object-fit: contain; /* 画像を歪ませずに枠内に収める */
-    display: block;
-}
-
-/* 本文エリア（名前＋メッセージ） */
-.chat-msg-content {
-    flex-grow: 1; /* 残りの幅を全部使う */
-}
-
-/* ヘッダー（名前とレベル） */
-.chat-msg-header {
-    display: flex;
-    gap: 8px; /* 名前と時間の隙間 */
-    font-size: 12px;
-    color: #ccc;
+    justify-content: space-between;
+    font-size: 9px;
+    color: #888;
     margin-bottom: 2px;
 }
-
-/* 名前部分を強調 */
 .chat-msg-user {
-    color: #ff0; /* 名前を黄色っぽくするとRPG感が出ます */
+    color: #ff0;
     font-weight: bold;
 }
-
-/* メッセージ本文 */
 .chat-msg-text {
-    font-size: 14px;
-    color: #fff;
+    word-break: break-all;
+    color: #eee;
     line-height: 1.3;
 }
+        .chat-msg-header {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* アバターと名前の間の隙間 */
+    font-size: 12px;
+}
+.chat-msg-avatar {
+    background: #333;
+    padding: 2px 5px;
+    border-radius: 4px;
+}
+
 /* 入力エリア */
 .chat-input-area {
     display: flex;
@@ -326,23 +311,7 @@
     color: #000;
     border-color: #fff;
 }
-
-@keyframes flash {
-            0% { opacity: 1; transform: scale(1); }
-            100% { opacity: 0; transform: scale(2); }
-        }
-        .effect-text {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 30px;
-            font-weight: bold;
-            color: #fff;
-            text-shadow: 0 0 10px #ff0;
-            animation: flash 0.5s ease-out forwards;
-            pointer-events: none; /* エフェクトがクリックの邪魔にならないようにする設定 */
-        }
-        
+    
     </style>
 </head>
 <body>
@@ -353,7 +322,6 @@
         <div id="player-icon" style="margin-right: 5px; cursor: pointer; padding: 2px 5px; border: 1px dashed #555; border-radius: 4px;" onclick="openIconSelect()">👤</div>
         <div id="player-name" style="font-size: 16px; color: #fff; margin-right: 15px; cursor: pointer; padding: 5px;" onclick="changeName()">名もなき者</div>
         <div id="player-level-display" style="font-size: 14px; color: #ff0; font-weight: bold;">Lv.1 (0/10)</div>
-        <div id="effect-layer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100;"></div>
     </div>
 
     <button id="chat-open-btn" onclick="toggleChat(true)">💬 雑談</button>
@@ -1099,30 +1067,6 @@ function executeInventorySell() {
     }
 }
 // --- 売却機能のプログラム（ここまで） ---
-
-    function playEffect(type) {
-    const layer = document.getElementById('effect-layer');
-    const effect = document.createElement('div');
-    effect.className = 'effect-text';
-    
-    let text = "";
-    let color = "#fff";
-
-    switch(type) {
-        case 'attack': text = "斬！"; color = "#ff4444"; break;
-        case 'critical': text = "会心！！"; color = "#ff0"; effect.style.fontSize = "50px"; break;
-        case 'heal': text = "回復！"; color = "#44ff44"; break;
-        case 'poison': text = "毒..."; color = "#aa00aa"; break;
-        case 'revive': text = "復活！！"; color = "#00ffff"; break;
-    }
-
-    effect.innerText = text;
-    effect.style.color = color;
-    layer.appendChild(effect);
-
-    // 0.5秒後に自動削除
-    setTimeout(() => effect.remove(), 500);
-}
     
 function updateHomeUI() {
     
@@ -2674,14 +2618,14 @@ function changeName() {
     
     // HTMLの構造を変更し、アバターとレベルの要素を追加
     msgDiv.innerHTML = `
-    <span class="chat-msg-avatar">${data.avatar || '無'}</span>
-    <div class="chat-msg-content">
-        <div class="chat-msg-header">
-            <span class="chat-msg-user">Lv.${escapeChatHtml(data.level)} ${escapeChatHtml(data.sender)}</span>
-            <span class="chat-msg-time">${timeStr}</span>
-        </div>
-        <div class="chat-msg-text">${escapeChatHtml(data.text)}</div>
+    <div class="chat-msg-header">
+        <span class="chat-msg-avatar" style="border:1px solid #fff; padding:2px; margin-right:5px;">
+            ${escapeChatHtml(data.avatar || '無')}
+        </span>
+        <span class="chat-msg-user">Lv.${escapeChatHtml(data.level || '1')} 【${escapeChatHtml(data.sender)}】</span>
+        <span class="chat-msg-time" style="margin-left:auto;">${timeStr}</span>
     </div>
+    <div class="chat-msg-text" style="padding-left:30px;">${escapeChatHtml(data.text)}</div>
 `;
     messagesContainer.appendChild(msgDiv);
               });
@@ -2704,7 +2648,7 @@ function changeName() {
     let senderName = document.getElementById('player-name').innerText || '名もなき者';
     
     // player-iconの中身をそのまま取得する
-    let senderAvatar = document.getElementById('player-icon').innerHTML || '👤';
+    let senderAvatar = document.getElementById('player-icon').innerText || '👤';
       // 送信ボタンを押したとき、ここにアバターの中身が表示されるはずです
 console.log("送信するアバターデータ:", document.getElementById('player-icon'));
     
