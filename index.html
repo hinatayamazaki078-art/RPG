@@ -789,7 +789,7 @@ const SKILL_DATA = {
     "妖精の粉": { cost: 15 }, "メテオ": { cost: 20 }, "デストラップ": { cost: 3 },
     "フェニックス": { cost: 20 }, "蘇りの歌": { cost: 50 }, "強固な甲羅": { cost: 5 },
     "天変地異": { cost: 50 }, "デスペラードヒューリー": { cost: 100 }, "精霊の歌": { cost: 0 },
-    "グレイデンスレイヴ": { cost: 0 },　"輝炎ノ息": { cost: 30 }, "虚影": { cost: 20 }
+    "グレイデンスレイヴ": { cost: 0 }, "輝炎ノ息": { cost: 30 }, "虚影": { cost: 20 }
 };
 
 const auraTypes = ['回避', '行動力', '会心', '回復'];
@@ -2007,7 +2007,7 @@ async function turn() {
     if (u.paralyze > 0) { u.paralyze--; addLog(`⚡ ${u.name}は麻痺して動けない！`); return next(); }
     if (u.deathTrap) { if (Math.random() < 0.1) { u.curH = Math.max(0, u.curH - 20); addLog(`☠️【デストラップ】${u.name}に20ダメ！`); checkAndRevivePhoenix(u); if (u.curH <= 0) return next(); } }
 
-    if (u.blind > 0) u.blind--; if (u.atkBuff > 0) u.atkBuff--; if (u.invincible > 0) u.invincible--;　if (u.evasionBuff > 0) u.evasionBuff--;
+    if (u.blind > 0) u.blind--; if (u.atkBuff > 0) u.atkBuff--; if (u.invincible > 0) u.invincible--; if (u.evasionBuff > 0) u.evasionBuff--;
 
     if (remainingActions <= 0) {
         remainingActions = 1; 
@@ -2536,7 +2536,7 @@ window.onload = () => {
     document.getElementById('btn-retreat').style.display = "block";
 
     isShadowMode = true; isBossMode = false; isDigMode = false; isShadowKingMode = false;
-　　remainingActions = 0; darumaTrigger = null; isGlobalDomination = false;
+    remainingActions = 0; darumaTrigger = null; isGlobalDomination = false;
 
     party = setupBattleData(selectedIds.map(sid => box.find(b => b.id === sid)), true);
     document.getElementById('header-stage-label').innerText = `影の領域 - ${shadowName}`;
