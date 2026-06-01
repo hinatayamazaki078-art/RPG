@@ -329,13 +329,6 @@
         </div>
     </div>
 
-</div> <script>
-    // JavaScriptコード...
-</script>
-
-</body>
-</html>
-
     <div id="view-icon-select" class="view">
         <h2>アバター変更</h2>
         <div class="guide-text">※タップしてアバターを変更します</div>
@@ -1984,122 +1977,6 @@ function onUnitClick(targetId) {
     else { if (target.curH <= 0) return; }
     executeAction(queue[qIdx], target, currentAction, sName); isSelecting = false; currentAction = null;
 }
-
-// ==========================================
-// オープンチャット機能（追加分JS）
-// ==========================================
-let chatUnsubscribe = null;
-
-// チャット画面の開閉切り替え
-window.toggleChat = function(show) {
-    const overlay = document.getElementById('chat-overlay');
-    overlay.style.display = show ? 'flex' : 'none';
-    
-    if (show) {
-        // 開いた時にリアルタイム監視を開始
-        initChatListener();
-    } else {
-        // 閉じたら監視を解除（負荷軽減）
-        if (chatUnsubscribe) {
-            chatUnsubscribe();
-            chatUnsubscribe = null;
-        }
-    }
-};
-
-// リアルタイムリスナーの初期化
-function initChatListener() {
-    if (chatUnsubscribe) return;
-    
-    try {
-        // Firestoreから最新の40件を降順で取得
-        chatUnsubscribe = db.collection('open_chats')
-            .orderBy('createdAt', 'desc')
-            .limit(40)
-            .onSnapshot(snapshot => {
-                const messagesContainer = document.getElementById('chat-messages');
-                messagesContainer.innerHTML = '';
-                
-                // 表示時は古い順（下に向かってタイムラインが進む）にするため配列を反転
-                const docs = [];
-                snapshot.forEach(doc => docs.unshift({ id: doc.id, ...doc.data() }));
-                
-                // 現在のプレイヤー名を取得（コード内の実変数名に合わせて調整してください）
-                let currentName = '自分';
-                if (typeof player !== 'undefined' && player.name) {
-                    currentName = player.name;
-                } else if (typeof gameState !== 'undefined' && gameState.playerName) {
-                    currentName = gameState.playerName;
-                }
-                
-                docs.forEach(data => {
-                    const msgDiv = document.createElement('div');
-                    msgDiv.className = 'chat-msg';
-                    
-                    // 自分の発言であればクラスを付与
-                    if (data.sender === currentName) {
-                        msgDiv.classList.add('me');
-                    }
-                    
-                    // タイムスタンプの整形
-                    const timeStr = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
-                    
-                    msgDiv.innerHTML = `
-                        <div class="chat-msg-meta">
-                            <span class="chat-msg-user">【${escapeChatHtml(data.sender)}】</span>
-                            <span class="chat-msg-time">${timeStr}</span>
-                        </div>
-                        <div class="chat-msg-text">${escapeChatHtml(data.text)}</div>
-                    `;
-                    messagesContainer.appendChild(msgDiv);
-                });
-                
-                // 常に最新メッセージ（最下部）へスクロール
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            }, error => {
-                console.error("チャット同期エラー: ", error);
-            });
-    } catch (e) {
-        console.error("チャット初期化に失敗しました。Firebaseの接続を確認してください。", e);
-    }
-}
-
-// メッセージの送信処理
-window.sendChatMessage = async function() {
-    const input = document.getElementById('chat-input');
-    const text = input.value.trim();
-    if (!text) return;
-    
-    // 現在のプレイヤー名を取得（設定されていない場合はデフォルト名）
-    let senderName = '名無しの旅人';
-    if (typeof player !== 'undefined' && player.name) {
-        senderName = player.name;
-    } else if (typeof gameState !== 'undefined' && gameState.playerName) {
-        senderName = gameState.playerName;
-    }
-    
-    try {
-        await db.collection('open_chats').add({
-            sender: senderName,
-            text: text,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        input.value = ''; // 送信成功したら入力欄をクリア
-    } catch (e) {
-        console.error("チャット送信エラー: ", e);
-        alert("通信エラー：メッセージの送信に失敗しました。");
-    }
-};
-
-// 安全のためのHTMLエスケープ関数
-function escapeChatHtml(str) {
-    if (!str) return '';
-    return str.replace(/&/g, '&amp;')
-              .replace(/</g, '&lt;')
-              .replace(/>/g, '&gt;')
-              .replace(/"/g, '&quot;')
-              .replace(/'/g, '&#39;');
-}
     
 function executeAction(u, t, type, skillName = null) {
     if (type === 'attack') {
@@ -2329,7 +2206,7 @@ window.onload = () => {
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-  import { getFirestore, collection, addDoc, getDocs, serverTimestamp, query, orderBy, limit, where, deleteDoc, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+  import { getFirestore, collection, addDoc, getDocs, serverTimestamp, query, orderBy, limit, where, deleteDoc, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
   const firebaseConfig = {
     apiKey: "AIzaSyD2v_krmy0L-lzvLF6_AdoeI5dbXyJr4JM",
     authDomain: "mojirpg-7ae6b.firebaseapp.com",
@@ -2688,6 +2565,95 @@ function changeName() {
   }
 }
 
+    // ==========================================
+  // オープンチャット機能（v9対応版）
+  // ==========================================
+  let chatUnsubscribe = null;
+
+  window.toggleChat = function(show) {
+      const overlay = document.getElementById('chat-overlay');
+      overlay.style.display = show ? 'flex' : 'none';
+      
+      if (show) {
+          initChatListener();
+      } else {
+          if (chatUnsubscribe) {
+              chatUnsubscribe();
+              chatUnsubscribe = null;
+          }
+      }
+  };
+
+  function initChatListener() {
+      if (chatUnsubscribe) return;
+      
+      try {
+          const q = query(collection(db, 'open_chats'), orderBy('createdAt', 'desc'), limit(40));
+          chatUnsubscribe = onSnapshot(q, (snapshot) => {
+              const messagesContainer = document.getElementById('chat-messages');
+              messagesContainer.innerHTML = '';
+              
+              const docs = [];
+              snapshot.forEach(d => docs.unshift({ id: d.id, ...d.data() }));
+              
+              // 画面上のプレイヤー名を取得
+              let currentName = document.getElementById('player-name').innerText || '名もなき者';
+              
+              docs.forEach(data => {
+                  const msgDiv = document.createElement('div');
+                  msgDiv.className = 'chat-msg';
+                  if (data.sender === currentName) msgDiv.classList.add('me');
+                  
+                  // タイムスタンプの整形
+                  const timeStr = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+                  
+                  msgDiv.innerHTML = `
+                      <div class="chat-msg-meta">
+                          <span class="chat-msg-user">【${escapeChatHtml(data.sender)}】</span>
+                          <span class="chat-msg-time">${timeStr}</span>
+                      </div>
+                      <div class="chat-msg-text">${escapeChatHtml(data.text)}</div>
+                  `;
+                  messagesContainer.appendChild(msgDiv);
+              });
+              
+              messagesContainer.scrollTop = messagesContainer.scrollHeight;
+          }, (error) => {
+              console.error("チャット同期エラー: ", error);
+          });
+      } catch (e) {
+          console.error("チャット初期化エラー", e);
+      }
+  }
+
+  window.sendChatMessage = async function() {
+      const input = document.getElementById('chat-input');
+      const text = input.value.trim();
+      if (!text) return;
+      
+      let senderName = document.getElementById('player-name').innerText || '名もなき者';
+      
+      try {
+          await addDoc(collection(db, 'open_chats'), {
+              sender: senderName,
+              text: text,
+              createdAt: serverTimestamp()
+          });
+          input.value = ''; 
+      } catch (e) {
+          console.error("チャット送信エラー: ", e);
+          alert("通信エラー：メッセージの送信に失敗しました。");
+      }
+  };
+
+  function escapeChatHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+  }
 
 </script>
 </body>
