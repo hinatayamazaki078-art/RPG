@@ -264,6 +264,17 @@
     color: #eee;
     line-height: 1.3;
 }
+        .chat-msg-header {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* アバターと名前の間の隙間 */
+    font-size: 12px;
+}
+.chat-msg-avatar {
+    background: #333;
+    padding: 2px 5px;
+    border-radius: 4px;
+}
 
 /* 入力エリア */
 .chat-input-area {
@@ -2594,27 +2605,27 @@ function changeName() {
               messagesContainer.innerHTML = '';
               
               const docs = [];
-              snapshot.forEach(d => docs.unshift({ id: d.id, ...d.data() }));
-              
-              // 画面上のプレイヤー名を取得
-              let currentName = document.getElementById('player-name').innerText || '名もなき者';
-              
-              docs.forEach(data => {
-                  const msgDiv = document.createElement('div');
-                  msgDiv.className = 'chat-msg';
-                  if (data.sender === currentName) msgDiv.classList.add('me');
-                  
-                  // タイムスタンプの整形
-                  const timeStr = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
-                  
-                  msgDiv.innerHTML = `
-                      <div class="chat-msg-meta">
-                          <span class="chat-msg-user">【${escapeChatHtml(data.sender)}】</span>
-                          <span class="chat-msg-time">${timeStr}</span>
-                      </div>
-                      <div class="chat-msg-text">${escapeChatHtml(data.text)}</div>
-                  `;
-                  messagesContainer.appendChild(msgDiv);
+              snapshot.forEach((doc) => {
+    const data = doc.data();
+    const timeStr = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--:--';
+    
+    // データがない場合のデフォルト値を設定
+    const avatar = data.avatar || '？';
+    const level = data.level || '1';
+
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'chat-msg';
+    
+    // HTMLの構造を変更し、アバターとレベルの要素を追加
+    msgDiv.innerHTML = `
+        <div class="chat-msg-header">
+            <span class="chat-msg-avatar" style="margin-right:5px; border:1px solid #555; padding:0 3px;">${escapeChatHtml(avatar)}</span>
+            <span class="chat-msg-user">Lv.${escapeChatHtml(level)} 【${escapeChatHtml(data.sender)}】</span>
+            <span class="chat-msg-time" style="margin-left:auto;">${timeStr}</span>
+        </div>
+        <div class="chat-msg-text" style="padding-left:20px; font-size:14px; margin-top:2px;">${escapeChatHtml(data.text)}</div>
+    `;
+    messagesContainer.appendChild(msgDiv);
               });
               
               messagesContainer.scrollTop = messagesContainer.scrollHeight;
@@ -2632,10 +2643,14 @@ function changeName() {
       if (!text) return;
       
       let senderName = document.getElementById('player-name').innerText || '名もなき者';
+      let senderAvatar = document.getElementById('player-avatar').innerText || '？'; // アバター表示用のID
+    let senderLevel = document.getElementById('player-level').innerText || '1';   // レベル表示用のID
       
       try {
           await addDoc(collection(db, 'open_chats'), {
               sender: senderName,
+              avatar: senderAvatar, // 追加
+            level: senderLevel,   // 追加
               text: text,
               createdAt: serverTimestamp()
           });
