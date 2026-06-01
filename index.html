@@ -259,9 +259,10 @@
 
 /* アバター画像 */
 .chat-msg-avatar img {
-    width: 170%;
-    height: 170%;
-    object-fit: cover;
+    width: 150%;  /* ここを調整して好みのサイズに！ */
+    height: 150%; /* ここを調整して好みのサイズに！ */
+    object-fit: contain; /* 画像を歪ませずに枠内に収める */
+    display: block;
 }
 
 /* 本文エリア（名前＋メッセージ） */
