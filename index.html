@@ -2638,29 +2638,40 @@ function changeName() {
   }
 
   window.sendChatMessage = async function() {
-      const input = document.getElementById('chat-input');
-      const text = input.value.trim();
-      if (!text) return;
-      
-      let senderName = document.getElementById('player-name').innerText || '名もなき者';
-      let senderAvatar = document.getElementById('player-avatar').innerText || '？'; // アバター表示用のID
-    let senderLevel = document.getElementById('player-level').innerText || '1';   // レベル表示用のID
-      
-      try {
-          await addDoc(collection(db, 'open_chats'), {
-              sender: senderName,
-              avatar: senderAvatar, // 追加
-            level: senderLevel,   // 追加
-              text: text,
-              createdAt: serverTimestamp()
-          });
-          input.value = ''; 
-      } catch (e) {
-          console.error("チャット送信エラー: ", e);
-          alert("通信エラー：メッセージの送信に失敗しました。");
-      }
-  };
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim();
+    if (!text) return;
 
+    // IDを正しいもの（HTMLに存在するID）に修正
+    let senderName = document.getElementById('player-name').innerText || '名もなき者';
+    
+    // player-iconの中身をそのまま取得する
+    let senderAvatar = document.getElementById('player-icon').innerText || '👤';
+    
+    // player-level-displayからレベル数値だけを抽出する（例: "Lv.5 (1/10)" から "5" を取り出すなど）
+    // シンプルに文字列全体を表示するなら下記でOKです
+    let senderLevel = "1"; // 既存システムから取得が難しい場合、まずは固定値や別の方法を検討
+    const lvEl = document.getElementById('player-level-display');
+    if (lvEl) {
+        // "Lv.5 (1/10)" というテキストから数字の部分を取り出す処理
+        const match = lvEl.innerText.match(/Lv\.(\d+)/);
+        senderLevel = match ? match[1] : "1";
+    }
+
+    try {
+        await addDoc(collection(db, 'open_chats'), {
+            sender: senderName,
+            avatar: senderAvatar,
+            level: senderLevel,
+            text: text,
+            createdAt: serverTimestamp()
+        });
+        input.value = ''; 
+    } catch (e) {
+        console.error("チャット送信エラー: ", e);
+        alert("通信エラー：メッセージの送信に失敗しました。");
+    }
+};
   function escapeChatHtml(str) {
       if (!str) return '';
       return str.replace(/&/g, '&amp;')
