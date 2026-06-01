@@ -771,7 +771,9 @@ const charData = [
     { name: '不死鳥', r: 5, p: 18, h: 25, m: 0, s: 18, skill: "不死の再生", cost: 0, special: true },
     { name: '天照', r: 5, p: 30, h: 35, m: 20, s: 8, skill: "神の審判", cost: 10 },
     { name: '宿灘', r: 7, p: 45, h: 50, m: 20, s: 12, skill: "伏魔御廚子", cost: 20 },
-    { name: 'サイタマ', r: 7, p: 60, h: 50, m: 15, s: 20, skill: "マジ殴り", cost: 40 }
+    { name: 'サイタマ', r: 7, p: 60, h: 50, m: 15, s: 20, skill: "マジ殴り", cost: 40 },
+    { name: '神龍', r: 8, p: 70, h: 85, m: 50, s: 25, skill: "輝炎ノ息", cost: 30 },
+    { name: '虚無王', r: 9, p: 85, h: 90, m: 50, s: 35, skill: "虚影", cost: 20 },
 ];
 
 const SKILL_DATA = {
@@ -781,7 +783,7 @@ const SKILL_DATA = {
     "妖精の粉": { cost: 15 }, "メテオ": { cost: 20 }, "デストラップ": { cost: 3 },
     "フェニックス": { cost: 20 }, "蘇りの歌": { cost: 50 }, "強固な甲羅": { cost: 5 },
     "天変地異": { cost: 50 }, "デスペラードヒューリー": { cost: 100 }, "精霊の歌": { cost: 0 },
-    "グレイデンスレイヴ": { cost: 0 }
+    "グレイデンスレイヴ": { cost: 0 }, "輝炎ノ息": { cost: 30 }, "虚影": { cost: 20 }
 };
 
 const auraTypes = ['回避', '行動力', '会心', '回復'];
@@ -1838,7 +1840,8 @@ function setupBattleData(arr, isP) {
             ...c, curH: c.h, maxH: c.h, curM: c.m, maxM: c.m, p: c.p + wpBonus, baseP: c.p + wpBonus, baseS: c.s, 
             isP: isP, poison: false, guard: false, charm: 0, lastDmg: 0, 
             auras: activeAuras, skillsList: activeSkills, 
-            usedPhoenix: false, blind: 0, paralyze: 0, atkBuff: 0, invincible: 0, deathTrap: false,
+            usedPhoenix: false, blind: 0, paralyze: 0, atkBuff: 0, invincible: 0, deathTrap: false, nextSkillIndex: 0, 
+        evasionBuff: 0
             nextSkillIndex: 0
         };
     });
@@ -1916,7 +1919,7 @@ async function turn() {
     if (u.paralyze > 0) { u.paralyze--; addLog(`⚡ ${u.name}は麻痺して動けない！`); return next(); }
     if (u.deathTrap) { if (Math.random() < 0.1) { u.curH = Math.max(0, u.curH - 20); addLog(`☠️【デストラップ】${u.name}に20ダメ！`); checkAndRevivePhoenix(u); if (u.curH <= 0) return next(); } }
 
-    if (u.blind > 0) u.blind--; if (u.atkBuff > 0) u.atkBuff--; if (u.invincible > 0) u.invincible--;
+    if (u.blind > 0) u.blind--; if (u.atkBuff > 0) u.atkBuff--; if (u.invincible > 0) u.invincible--; if (u.evasionBuff > 0) u.evasionBuff--;
 
     if (remainingActions <= 0) {
         remainingActions = 1; 
@@ -2033,7 +2036,7 @@ function startTargetSelection(type, skillName = null) {
     const sName = skillName || (u.skillsList && u.skillsList[0] ? u.skillsList[0].name : u.skill);
     
     if (type === 'skill') { 
-        let isAoE = ['感電','咆哮','鱗粉','御廚子','巨大触手','炎のブレス','伏魔御廚子','達磨さんが転んだ','ムチ','ブリザード','妖精の粉','攻撃増幅薬','蘇りの歌','強固な甲羅','天変地異','デスペラードヒューリー','支配','グレイデンスレイヴ'].includes(sName);
+        let isAoE = ['感電','咆哮','輝炎ノ息','虚影','鱗粉','御廚子','巨大触手','炎のブレス','伏魔御廚子','達磨さんが転んだ','ムチ','ブリザード','妖精の粉','攻撃増幅薬','蘇りの歌','強固な甲羅','天変地異','デスペラードヒューリー','支配','グレイデンスレイヴ'].includes(sName);
         if (isAoE) return executeAction(u, null, 'skill', sName);
     }
     
@@ -2063,6 +2066,7 @@ function executeAction(u, t, type, skillName = null) {
         if (t.auras) {
             const evadeAu = t.auras.find(a => a.type === '回避');
             if (evadeAu && Math.random() * 100 < evadeAu.value) isEvaded = true;
+            if (t.evasionBuff > 0 && Math.random() < 0.5) isEvaded = true;
         }
         if (isEvaded) { addLog("💨【回避】" + t.name + "は避けた！ (MP+3)"); return next(); }
         if (t.invincible > 0) { addLog("🛡️【強固な甲羅】" + t.name + "へのダメージは0！ (MP+3)"); return next(); }
@@ -2148,6 +2152,21 @@ function executeAction(u, t, type, skillName = null) {
         else if (sName === '毒牙' || sName === '猛毒') { t.poison = true; addLog(t.name + "を致命的な毒にした！"); }
         else if (sName === '甘い蜜') { t.curH = Math.min(t.maxH, t.curH + 3); addLog(t.name + "が3回復！"); }
         else if (sName === '丸呑み') { if(t.invincible<=0) { t.curH = Math.max(0, t.curH - 15); addLog(t.name + "に15の固定ダメージ！"); checkAndRevivePhoenix(t); } }
+        else if (sName === '輝炎ノ息') { 
+         targets.forEach(e => { 
+             if(e.curH>0 && e.invincible<=0) { 
+                 e.curH = Math.max(0, e.curH - 60); 
+                 checkAndRevivePhoenix(e); 
+             } 
+         }); 
+         addLog("灼熱の輝炎！全体に60ダメージ！"); 
+     }
+     else if (sName === '虚影') { 
+         allies.forEach(a => { 
+             if(a.curH>0) a.evasionBuff = 3; 
+         }); 
+         addLog("虚無の影が包み込む！味方全員の回避率が大幅アップ！(3ターン)"); 
+     }
     }
     selectedBattleSkill = null;
     next();
@@ -2225,6 +2244,7 @@ function updateUI() {
         if (u.poison) badgeHtml += '<span style="color:#0f0; font-size:10px;">[毒]</span>';
         if (u.paralyze > 0) badgeHtml += '<span style="color:#ff0; font-size:10px;">[痺]</span>';
         if (u.deathTrap) badgeHtml += '<span style="color:#a0a; font-size:10px;">[死]</span>';
+     if (u.evasionBuff > 0) badgeHtml += '<span style="color:#0ff; font-size:10px;">[避↑]</span>'; // ←追加
         
         return `<div class="${classes}" onclick="onUnitClick(${u.id})">
     <div class="kanji ${auraClass}" style="font-size:28px; ${auraStyle}">${u.name}</div>
