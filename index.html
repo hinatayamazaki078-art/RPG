@@ -1223,7 +1223,7 @@ function updateHomeUI() {
             }
         }
         return `<div class="box-item ${selectedIds.includes(c.id)?'selected':''}" onclick="toggleSelect(${c.id})" ondblclick="openShop(${c.id})">
-            <span class="rarity">${'★'.repeat(c.r || 1)}</span>
+            <span class="rarity">${getRarityStarsHTML(c.r || 1)}</span>
             <span style="font-size:${c.name.length >= 4 ? '11px' : '20px'}; display:block; width:100%; white-space:nowrap; overflow:hidden;">${c.name}</span>
             ${auraBadge}${weaponBadge}<span class="shop-hint">修練</span>
         </div>`;
@@ -1233,7 +1233,7 @@ function updateHomeUI() {
         const owner = box.find(b => (b.auraIds || []).includes(a.id));
         const ownerText = owner ? `<div style="font-size:7px; color:#f0f; margin-top:2px;">装着:${owner.name}</div>` : `<div style="font-size:7px; color:#0f0; margin-top:2px;">未装着</div>`;
         return `<div class="box-item aura-item" style="opacity: ${owner ? 0.6 : 1}">
-            <span class="rarity">${'★'.repeat(a.r)}</span><div class="aura-type">${a.type}</div>
+            <span class="rarity">${getRarityStarsHTML(a.r)}</span><div class="aura-type">${a.type}</div>
             <div class="aura-effect">${a.text}</div>${ownerText}
         </div>`;
     }).join('');
@@ -1425,7 +1425,7 @@ function playIconGacha() {
 
             // 結果画面の構築
             resultList.innerHTML = `<div class="gacha-res-item" style="width:100px; height:100px; color:${resultIcon.r>=5?'#f0f':(resultIcon.r>=3?'#ff0':'#0ff')}; border-color:${resultIcon.r>=5?'#f0f':(resultIcon.r>=3?'#ff0':'#0aa')};">
-                <span class="rarity">${'★'.repeat(resultIcon.r)}</span>
+                <span class="rarity">${getRarityStarsHTML(resultIcon.r)}</span>
                 <div style="font-size:45px; margin-top:8px;">${resultIcon.icon}</div>
             </div>`;
             
@@ -1476,8 +1476,7 @@ function playGacha(times) {
                 display.innerHTML = `<span style="font-size:${base.name.length >= 4 ? '50px' : '120px'};">${base.name}</span>`; display.className = "";
                 if (base.r >= 7) display.classList.add('rarity-god7'); else if (base.r === 6) display.classList.add('rarity-god'); else if (base.r >= 4) display.classList.add('rarity-high');
                 let borderCol = '#444', textCol = '#fff'; if (base.r >= 7) { borderCol = '#f00'; textCol = '#faa'; } else if (base.r === 6) { borderCol = '#f0f'; textCol = '#f0f'; } else if (base.r >= 4) { borderCol = '#ff0'; textCol = '#ff0'; }
-                document.getElementById('gacha-result-list').innerHTML += `<div class="gacha-res-item" style="color:${textCol}; border-color:${borderCol}"><span class="rarity">${'★'.repeat(base.r)}</span><span>${base.name}</span></div>`;
-                currentPull++; setTimeout(pullNext, 200);
+                document.getElementById('gacha-result-list').innerHTML += `<div class="gacha-res-item" style="color:${textCol}; border-color:${borderCol}"><span class="rarity">${getRarityStarsHTML(base.r)}</span><span>${base.name}</span></div>`;
             }
         }, 30);
     }; pullNext();
@@ -1506,7 +1505,7 @@ function playPremiumGacha(times) {
                 display.innerHTML = `<span style="font-size:${base.name.length >= 4 ? '50px' : '120px'};">${base.name}</span>`; display.className = "";
                 if (base.r >= 7) display.classList.add('rarity-god7'); else if (base.r === 6) display.classList.add('rarity-god'); else display.classList.add('rarity-high');
                 let borderCol = base.r >= 7 ? '#f00' : (base.r === 6 ? '#f0f' : '#ff0'), textCol = base.r >= 7 ? '#faa' : (base.r === 6 ? '#f0f' : '#ff0');
-                document.getElementById('gacha-result-list').innerHTML += `<div class="gacha-res-item" style="color:${textCol}; border-color:${borderCol}"><span class="rarity">${'★'.repeat(base.r)}</span><span>${base.name}</span></div>`;
+                document.getElementById('gacha-result-list').innerHTML += `<div class="gacha-res-item" style="color:${textCol}; border-color:${borderCol}"><span class="rarity">${getRarityStarsHTML(base.r)}</span><span>${base.name}</span></div>`;
                 currentPull++; setTimeout(pullNextPremium, 200);
             }
         }, 40);
@@ -1577,8 +1576,7 @@ function playUltraGacha(times) {
                 }
                 
                 // リストへの結果追加
-                document.getElementById('gacha-result-list').innerHTML += `<div class="gacha-res-item" style="color:${textCol}; border-color:${borderCol}"><span class="rarity">${'★'.repeat(base.r)}</span><span>${base.name}</span></div>`;
-                currentPull++; 
+                document.getElementById('gacha-result-list').innerHTML += `<div class="gacha-res-item" style="color:${textCol}; border-color:${borderCol}"><span class="rarity">${getRarityStarsHTML(base.r)}</span><span>${base.name}</span></div>`;
                 setTimeout(pullNextUltra, 200);
             }
         }, 40);
@@ -1604,7 +1602,7 @@ function playAuraGacha() {
             const newAura = { id: Math.random(), type: type, r: r, value: spec.val, text: spec.txt }; auras.push(newAura);
             display.innerText = type; if(r >= 4) display.classList.add('rarity-high');
             document.getElementById('gacha-result-name').innerText = "オーラ獲得！";
-            document.getElementById('gacha-result-list').innerHTML = `<div class="gacha-res-item" style="width:140px; height:80px; color:${r>=6?'#f0f':(r>=4?'#ff0':'#0ff')}; border-color:#0aa;"><span class="rarity">${'★'.repeat(r)}</span><div style="font-size:16px; font-weight:bold; margin-top:8px;">${type}</div><div style="font-size:9px; color:#ccc;">${spec.txt}</div></div>`;
+            document.getElementById('gacha-result-list').innerHTML = `<div class="gacha-res-item" style="width:140px; height:80px; color:${r>=6?'#f0f':(r>=4?'#ff0':'#0ff')}; border-color:#0aa;"><span class="rarity">${getRarityStarsHTML(r)}</span><div style="font-size:16px; font-weight:bold; margin-top:8px;">${type}</div><div style="font-size:9px; color:#ccc;">${spec.txt}</div></div>`;
             document.getElementById('gacha-close-btn').style.display = 'block'; saveData();
         }
     }, 40);
