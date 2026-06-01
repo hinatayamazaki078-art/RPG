@@ -507,6 +507,16 @@
         <button class="gacha-btn" onclick="playGacha(10)">通常10連<span>(100枚)</span></button>
         <button class="gacha-btn" style="background:#402; border-color:#d0d;" onclick="playPremiumGacha(1)">上級単発<span>(100枚)</span></button>
         <button class="gacha-btn" style="background:#503; border-color:#f0f;" onclick="playPremiumGacha(10)">上級10連<span>(1000枚)</span></button>
+        <div class="gacha-group" style="grid-column: span 2; border: 1px solid #ff00ff; padding: 10px; margin-top: 10px; border-radius: 5px;">
+    <h3 style="margin: 0 0 10px 0; color: #ff00ff; text-align: center;">極級ガチャ</h3>
+    <p style="font-size: 11px; color: #ccc; margin-bottom: 10px; text-align: center;">
+        ★5以上確定！最高レアリティ「ピンク★2」を狙え！
+    </p>
+    <div style="display: flex; gap: 10px; justify-content: center;">
+        <button class="menu-btn" onclick="playUltraGacha(1)" style="font-size: 12px; padding: 4px 15px;">単発 (1500C)</button>
+        <button class="menu-btn" onclick="playUltraGacha(10)" style="font-size: 12px; padding: 4px 15px;">10連 (15000C)</button>
+    </div>
+</div>
         
         <button class="aura-btn" onclick="playAuraGacha()">霊気ガチャ<span>(30枚)</span></button>
         <button class="skill-gacha-btn" onclick="playSkillGacha()">スキルガチャ<span>(20枚)</span></button>
@@ -1468,6 +1478,79 @@ function playPremiumGacha(times) {
     }; pullNextPremium();
 }
 
+function playUltraGacha(times) {
+    const cost = times === 10 ? 15000 : 1500;
+    if (coins < cost) return alert(`コインが不足しています！（必要:${cost}枚）`); 
+    
+    coins -= cost; 
+    document.getElementById('global-coin-count').innerText = coins;
+    openGachaOverlay(""); 
+    const display = document.getElementById('gacha-kanji-display');
+    let currentPull = 0;
+    
+    const pullNextUltra = () => {
+        if (currentPull >= times) {
+            display.style.display = 'none'; 
+            document.getElementById('gacha-result-name').innerText = "── 極級召喚結果 ──";
+            document.getElementById('gacha-close-btn').style.display = 'block'; 
+            saveData(); 
+            return;
+        }
+        let count = 0; 
+        document.getElementById('gacha-result-name').innerText = `${currentPull + 1} 体目の極級召喚中...`;
+        
+        const interval = setInterval(() => {
+            const randDisp = charData[Math.floor(Math.random() * charData.length)];
+            display.innerHTML = `<span style="font-size:${randDisp.name.length >= 4 ? '40px' : '120px'};">${randDisp.name}</span>`;
+            count++;
+            
+            if (count > 15) {
+                clearInterval(interval); 
+                let selectedRarity = 5; 
+                const roll = Math.random() * 100;
+                
+                // 確率の判定: ★5(75%), ★6(15%), ★7(8%), ピンク★1[r:8](1.5%), ピンク★2[r:9](0.5%)
+                if (roll < 75.0) selectedRarity = 5; 
+                else if (roll < 90.0) selectedRarity = 6; 
+                else if (roll < 98.0) selectedRarity = 7; 
+                else if (roll < 99.5) selectedRarity = 8; 
+                else selectedRarity = 9;
+                
+                const pool = charData.filter(c => c.r === selectedRarity); 
+                // 万が一該当レアリティのキャラが未実装の場合は★5を出す
+                const base = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : charData.find(c => c.r === 5);
+                const newUnit = {...base, id: Math.random(), auraId: null, auraIds: [], weaponId: null}; 
+                box.push(newUnit);
+                
+                display.innerHTML = `<span style="font-size:${base.name.length >= 4 ? '50px' : '120px'};">${base.name}</span>`; 
+                display.className = "";
+                
+                // 演出と色の設定
+                let borderCol = '#ff0', textCol = '#ff0';
+                if (base.r >= 8) { 
+                    display.classList.add('rarity-god7'); 
+                    borderCol = '#ff69b4'; // ピンク色
+                    textCol = '#ff69b4'; 
+                } else if (base.r === 7) { 
+                    display.classList.add('rarity-god7'); 
+                    borderCol = '#f00'; textCol = '#faa'; 
+                } else if (base.r === 6) { 
+                    display.classList.add('rarity-god'); 
+                    borderCol = '#f0f'; textCol = '#f0f'; 
+                } else { 
+                    display.classList.add('rarity-high'); 
+                }
+                
+                // リストへの結果追加
+                document.getElementById('gacha-result-list').innerHTML += `<div class="gacha-res-item" style="color:${textCol}; border-color:${borderCol}"><span class="rarity">${'★'.repeat(base.r)}</span><span>${base.name}</span></div>`;
+                currentPull++; 
+                setTimeout(pullNextUltra, 200);
+            }
+        }, 40);
+    }; 
+    pullNextUltra();
+}
+    
 function playAuraGacha() {
     const cost = 30; if (coins < cost) return alert(`コインが不足しています！`); coins -= cost; document.getElementById('global-coin-count').innerText = coins;
     openGachaOverlay("霊気収束中..."); const display = document.getElementById('gacha-kanji-display');
