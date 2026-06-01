@@ -1101,6 +1101,9 @@ function executeInventorySell() {
 // --- 売却機能のプログラム（ここまで） ---
 
     function playEffect(type) {
+    // ▼ ここを追加：攻撃のエフェクト（通常攻撃・会心）のときは何もせず処理を終了する
+    if (type === 'attack' || type === 'critical') return;
+
     const layer = document.getElementById('effect-layer');
     const effect = document.createElement('div');
     effect.className = 'effect-text';
