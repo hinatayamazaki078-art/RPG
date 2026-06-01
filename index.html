@@ -24,7 +24,12 @@
         .unit-area { display: flex; justify-content: space-around; height: 125px; align-items: center; background: #050505; border: 1px solid #111; width: 100%; box-sizing: border-box; flex-shrink: 0; }
         .char-box { text-align: center; width: 85px; height: 115px; opacity: 0.4; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: 0.2s; border: 1px solid transparent; cursor: default; }
         .active-unit { opacity: 1; border: 1px solid #fff; background: #222; }
-        .selectable { cursor: pointer; border: 1px dashed #0f0; opacity: 1; animation: flash 1s infinite; }
+        .selectable {
+    cursor: pointer;
+    border: 1px dashed #0f0; /* 点線の枠だけ残ります */
+    opacity: 1;
+    /* animation を削除しました */
+}
         @keyframes flash { 0% { border-color: #0f0; } 50% { border-color: #fff; } 100% { border-color: #0f0; } }
         .dead { opacity: 0.1 !important; filter: grayscale(1); pointer-events: none; }
         .dead .kanji { animation: none !important; text-shadow: none !important; }
