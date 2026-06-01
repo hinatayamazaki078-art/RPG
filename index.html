@@ -485,9 +485,23 @@
     <h2 style="color:#ff0;">案内人の店</h2>
     
     <!-- 案内人のセリフエリア -->
-    <div style="display:flex; flex-direction:column; align-items:center; margin: 10px 0; padding: 15px; border: 1px solid #770; background: #110; border-radius: 5px;">
-        <img src="annainin.png" alt="案内人" style="width: 80px; height: 80px; object-fit: contain; margin-bottom: 10px; filter: drop-shadow(0 0 5px rgba(255, 255, 0, 0.5));">
-        <div style="font-size: 13px; color: #fff; text-align: center; line-height: 1.5;">
+    <div style="display:flex; flex-direction:column; align-items:center; margin: 10px 0; border: 1px solid #770; background: #110; border-radius: 5px; overflow: hidden; /* 角丸からはみ出た画像を隠す */">
+        
+        <div style="width: 100%; height: 250px; /* ★表示したい高さ。大きくした */ overflow: hidden; /* ★枠からはみ出た部分を隠す */ position: relative;">
+            <img src="annainin.png" alt="案内人" style="
+                width: 130%; /* ★コンテナより大きくして拡大 */
+                height: auto; /* アスペクト比維持 */
+                position: absolute; /* 位置調整用 */
+                top: -20px; /* ★上部を少しコンテナからはみ出させて頭の位置を調整 */
+                left: 50%; /* 中央寄せの起点 */
+                transform: translateX(-50%); /* 完全に中央に寄せる */
+                object-fit: cover; /* コンテナを埋めるように拡大 */
+                object-position: top center; /* 画像の上部を中心に表示 */
+                filter: drop-shadow(0 0 15px rgba(255, 255, 0, 0.7)); /* ★影も少し強調 */
+            ">
+        </div>
+        
+        <div style="font-size: 14px; color: #fff; text-align: center; line-height: 1.6; padding: 15px 20px; background: rgba(0,0,0,0.5); /* 文字を見やすく */ width: 100%; box-sizing: border-box; border-top: 1px solid #770;">
             『ガラクタしかないが、タダにはならねぇ・・・。』
         </div>
     </div>
