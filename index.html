@@ -326,7 +326,23 @@
     color: #000;
     border-color: #fff;
 }
-    
+
+@keyframes flash {
+            0% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(2); }
+        }
+        .effect-text {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 30px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 10px #ff0;
+            animation: flash 0.5s ease-out forwards;
+            pointer-events: none; /* エフェクトがクリックの邪魔にならないようにする設定 */
+        }
+        
     </style>
 </head>
 <body>
@@ -337,6 +353,7 @@
         <div id="player-icon" style="margin-right: 5px; cursor: pointer; padding: 2px 5px; border: 1px dashed #555; border-radius: 4px;" onclick="openIconSelect()">👤</div>
         <div id="player-name" style="font-size: 16px; color: #fff; margin-right: 15px; cursor: pointer; padding: 5px;" onclick="changeName()">名もなき者</div>
         <div id="player-level-display" style="font-size: 14px; color: #ff0; font-weight: bold;">Lv.1 (0/10)</div>
+        <div id="effect-layer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100;"></div>
     </div>
 
     <button id="chat-open-btn" onclick="toggleChat(true)">💬 雑談</button>
@@ -1082,6 +1099,30 @@ function executeInventorySell() {
     }
 }
 // --- 売却機能のプログラム（ここまで） ---
+
+    function playEffect(type) {
+    const layer = document.getElementById('effect-layer');
+    const effect = document.createElement('div');
+    effect.className = 'effect-text';
+    
+    let text = "";
+    let color = "#fff";
+
+    switch(type) {
+        case 'attack': text = "斬！"; color = "#ff4444"; break;
+        case 'critical': text = "会心！！"; color = "#ff0"; effect.style.fontSize = "50px"; break;
+        case 'heal': text = "回復！"; color = "#44ff44"; break;
+        case 'poison': text = "毒..."; color = "#aa00aa"; break;
+        case 'revive': text = "復活！！"; color = "#00ffff"; break;
+    }
+
+    effect.innerText = text;
+    effect.style.color = color;
+    layer.appendChild(effect);
+
+    // 0.5秒後に自動削除
+    setTimeout(() => effect.remove(), 500);
+}
     
 function updateHomeUI() {
     
