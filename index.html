@@ -2648,7 +2648,7 @@ function changeName() {
     let senderName = document.getElementById('player-name').innerText || '名もなき者';
     
     // player-iconの中身をそのまま取得する
-    let senderAvatar = document.getElementById('player-icon').innerText || '👤';
+    let senderAvatar = document.getElementById('player-icon').innerHTML || '👤';
       // 送信ボタンを押したとき、ここにアバターの中身が表示されるはずです
 console.log("送信するアバターデータ:", document.getElementById('player-icon'));
     
