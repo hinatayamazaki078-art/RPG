@@ -2620,7 +2620,7 @@ function changeName() {
     msgDiv.innerHTML = `
     <div class="chat-msg-header">
         <span class="chat-msg-avatar" style="border:1px solid #fff; padding:2px; margin-right:5px;">
-            ${escapeChatHtml(data.avatar || '無')}
+            ${data.avatar || '無'}
         </span>
         <span class="chat-msg-user">Lv.${escapeChatHtml(data.level || '1')} 【${escapeChatHtml(data.sender)}】</span>
         <span class="chat-msg-time" style="margin-left:auto;">${timeStr}</span>
