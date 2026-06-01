@@ -777,9 +777,9 @@ const charData = [
     { name: '不死鳥', r: 5, p: 18, h: 25, m: 0, s: 18, skill: "不死の再生", cost: 0, special: true },
     { name: '天照', r: 5, p: 30, h: 35, m: 20, s: 8, skill: "神の審判", cost: 10 },
     { name: '宿灘', r: 7, p: 45, h: 50, m: 20, s: 12, skill: "伏魔御廚子", cost: 20 },
-    { name: 'サイタマ', r: 7, p: 60, h: 50, m: 15, s: 20, skill: "マジ殴り", cost: 40 }
+    { name: 'サイタマ', r: 7, p: 60, h: 50, m: 15, s: 20, skill: "マジ殴り", cost: 40 },
     { name: '神龍', r: 8, p: 70, h: 85, m: 50, s: 25, skill: "輝炎ノ息", cost: 30 },
-    { name: '虚無王', r: 9, p: 85, h: 90, m: 50, s: 35, skill: "虚影", cost: 20 }
+    { name: '虚無王', r: 9, p: 85, h: 90, m: 50, s: 35, skill: "虚影", cost: 20 },
 ];
 
 const SKILL_DATA = {
@@ -1924,13 +1924,13 @@ function setupBattleData(arr, isP) {
             activeSkills.push({ name: 'グレイデンスレイヴ', cost: 0, oncePerMatch: true, used: false });
         }
 
-        return {
+       return {
             ...c, curH: c.h, maxH: c.h, curM: c.m, maxM: c.m, p: c.p + wpBonus, baseP: c.p + wpBonus, baseS: c.s, 
             isP: isP, poison: false, guard: false, charm: 0, lastDmg: 0, 
             auras: activeAuras, skillsList: activeSkills, 
-            usedPhoenix: false, blind: 0, paralyze: 0, atkBuff: 0, invincible: 0, deathTrap: false,nextSkillIndex: 0, 
-        evasionBuff: 0
-            nextSkillIndex: 0
+            usedPhoenix: false, blind: 0, paralyze: 0, atkBuff: 0, invincible: 0, deathTrap: false,
+            nextSkillIndex: 0, 
+            evasionBuff: 0
         };
     });
 }
@@ -2150,9 +2150,12 @@ function executeAction(u, t, type, skillName = null) {
 
         if (u.blind > 0 && Math.random() < 0.3) { addLog("💫【閃光】" + u.name + "の攻撃は外れた！ (MP+3)"); return next(); }
 
+        // ▼必ず isEvaded を先に宣言する！
+        let isEvaded = false;
+        
+        // ▼その後に判定を行う
         if (t.evasionBuff > 0 && Math.random() < 0.5) isEvaded = true;
         
-        let isEvaded = false;
         if (t.auras) {
             const evadeAu = t.auras.find(a => a.type === '回避');
             if (evadeAu && Math.random() * 100 < evadeAu.value) isEvaded = true;
