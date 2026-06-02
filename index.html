@@ -2410,8 +2410,53 @@ function openMerchant() {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     // ショップのビューを表示する
     document.getElementById('view-merchant').classList.add('active');
+    const listContainer = document.getElementById('merchant-item-list');
+    listContainer.style.display = 'block'; // 中央寄せを解除
+    listContainer.style.padding = '10px';
+    listContainer.style.overflowY = 'auto';
+
+    const price = 2000; // ここで値段を自由に設定してください（例: 5000枚）
+
+    listContainer.innerHTML = `
+        <div style="border: 1px solid #a0a; background: #202; padding: 10px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; border-radius: 4px;">
+            <div style="text-align: left;">
+                <div style="color: #f0f; font-weight: bold; font-size: 14px;">忘却の波動の種</div>
+                <div style="color: #ccc; font-size: 10px; margin-top: 4px;">敵の全強化状態(攻撃↑, 無敵, 回避↑, 身代わり)を解除</div>
+            </div>
+            <button onclick="buyMerchantSkill('忘却の波動', ${price})" style="background: #404; border: 1px solid #f0f; color: #ff0; font-size: 12px; padding: 5px 10px; cursor: pointer; white-space: nowrap; margin-left: 10px; flex-shrink: 0;">
+                ${price}枚で購入
+            </button>
+        </div>
+    `;
 }
 
+// ▼ここから新規追加：案内人からスキルを購入する処理▼
+function buyMerchantSkill(skillName, price) {
+    // コインが足りるかチェック
+    if (coins < price) {
+        return alert(`案内人『タダにはならねぇって言っただろ。』\n（コインが不足しています！必要: ${price}枚）`);
+    }
+    
+    // 購入確認
+    if (!confirm(`【${skillName}の種】を ${price} 枚で購入しますか？`)) {
+        return;
+    }
+    
+    // コインを消費して表示を更新
+    coins -= price;
+    document.getElementById('global-coin-count').innerText = coins;
+    
+    // SKILL_DATAから消費MP(cost)を取得し、種の配列(seeds)に追加
+    const skillCost = SKILL_DATA[skillName] ? SKILL_DATA[skillName].cost : 30;
+    seeds.push({ name: skillName, cost: skillCost });
+    
+    // セーブデータを保存し、拠点のUIを更新
+    saveData();
+    updateHomeUI();
+    
+    alert(`案内人『まいど・・・。』\n\n【${skillName}の種】を購入しました！\n拠点の「抽出・獲得したスキルの種」に追加されました。`);
+}
+    
 function closeMerchant() {
     // ショップのビューを非表示にする
     document.getElementById('view-merchant').classList.remove('active');
