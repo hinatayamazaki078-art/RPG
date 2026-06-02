@@ -837,7 +837,8 @@ const SKILL_DATA = {
     "妖精の粉": { cost: 15 }, "メテオ": { cost: 20 }, "デストラップ": { cost: 3 },
     "フェニックス": { cost: 20 }, "蘇りの歌": { cost: 50 }, "強固な甲羅": { cost: 5 },
     "天変地異": { cost: 50 }, "デスペラードヒューリー": { cost: 100 }, "精霊の歌": { cost: 0 },
-    "グレイデンスレイヴ": { cost: 0 }, "輝炎ノ息": { cost: 30 }, "虚影": { cost: 20 }
+    "グレイデンスレイヴ": { cost: 0 }, "輝炎ノ息": { cost: 30 }, "虚影": { cost: 20 },
+    "忘却の波動": { cost: 30 }
 };
 
 const auraTypes = ['回避', '行動力', '会心', '回復'];
@@ -2161,7 +2162,7 @@ function startTargetSelection(type, skillName = null) {
     const sName = skillName || (u.skillsList && u.skillsList[0] ? u.skillsList[0].name : u.skill);
     
     if (type === 'skill') { 
-        let isAoE = ['感電','咆哮','輝炎ノ息','虚影','鱗粉','御廚子','巨大触手','炎のブレス','伏魔御廚子','達磨さんが転んだ','ムチ','ブリザード','妖精の粉','攻撃増幅薬','蘇りの歌','強固な甲羅','天変地異','デスペラードヒューリー','支配','グレイデンスレイヴ'].includes(sName);
+        let isAoE = ['感電','咆哮','輝炎ノ息','虚影','鱗粉','御廚子','巨大触手','炎のブレス','伏魔御廚子','達磨さんが転んだ','ムチ','ブリザード','妖精の粉','攻撃増幅薬','蘇りの歌','強固な甲羅','天変地異','デスペラードヒューリー','支配','グレイデンスレイヴ','忘却の波動'].includes(sName);
         if (isAoE) return executeAction(u, null, 'skill', sName);
     }
     
@@ -2292,6 +2293,17 @@ function executeAction(u, t, type, skillName = null) {
          }); 
          addLog("虚無の影が包み込む！味方全員の回避率が大幅アップ！(3ターン)"); 
      }
+        else if (sName === '忘却の波動') {
+            targets.forEach(e => {
+                if(e.curH > 0) {
+                    e.atkBuff = 0;       // 攻撃力バフ解除
+                    e.invincible = 0;    // 無敵（強固な甲羅など）解除
+                    e.evasionBuff = 0;   // 回避バフ解除
+                    e.guard = false;     // 身代わり状態解除
+                }
+            });
+            addLog("忘却の波動！相手の強化状態をすべてかき消した！");
+        }
     }
     selectedBattleSkill = null;
     next();
