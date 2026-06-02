@@ -468,6 +468,7 @@
             <button style="grid-column: span 2; background: #135; border-color: #26a; font-size: 14px;" onclick="openManual()">説明書</button>
             <button style="grid-column: span 2; background: #033; border-color: #0aa; color: #0ff;" onclick="openShadowList()">他者の影に挑む</button>
             <button style="grid-column: span 2; background: #550; border-color: #aa0; color: #ff0; font-size: 12px;" onclick="openMerchant()">案内人の店</button>
+            <button style="grid-column: span 2; background: #550; border-color: #0ff; color: #0ff; font-size: 12px;" onclick="openTalkView()">案内人との会話</button>
 
             <button style="grid-column: span 2; background: #303; border-color: #a0a; color: #f0f; font-size: 12px;" onclick="uploadMyShadow()">影を刻む</button>
             <button style="grid-column: span 2; background: #300; border-color: #f00; color: #f88; font-size: 12px;" onclick="deleteMyShadow()">影を削除</button>
@@ -477,6 +478,14 @@
         </div>
     </div>
 
+    <div id="view-talk" class="view">
+    <h2 style="color:#0ff;">案内人との会話</h2>
+    <div style="padding: 15px; font-size: 13px; line-height: 1.8; background: #111; border: 1px solid #333; flex-grow: 1; overflow-y: auto;">
+        <p style="text-align:center; color:#888;">（ここに会話一覧が表示されます）</p>
+    </div>
+    <button onclick="closeTalkView()" style="height:45px; margin-top:15px;">拠点に戻る</button>
+</div>
+    
     <div id="view-manual" class="view">
         <h2 style="color:#0f0;">説明書</h2>
         <div style="padding: 15px; font-size: 13px; line-height: 1.8; background: #111; border: 1px solid #333; flex-grow: 1;">
@@ -1673,7 +1682,17 @@ function playAuraGacha() {
     }, 40);
 }
 
-function openManual() { document.getElementById('view-home').classList.remove('active'); document.getElementById('view-manual').classList.add('active'); }
+function openTalkView() {
+    document.getElementById('view-home').classList.remove('active');
+    document.getElementById('view-talk').classList.add('active');
+}
+
+function closeTalkView() {
+    document.getElementById('view-talk').classList.remove('active');
+    document.getElementById('view-home').classList.add('active');
+}
+    
+    function openManual() { document.getElementById('view-home').classList.remove('active'); document.getElementById('view-manual').classList.add('active'); }
 function closeManual() { document.getElementById('view-manual').classList.remove('active'); document.getElementById('view-home').classList.add('active'); }
 
 function openStageSelection() {
