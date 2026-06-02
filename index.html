@@ -2196,7 +2196,7 @@ function onUnitClick(targetId) {
     executeAction(queue[qIdx], target, currentAction, sName); isSelecting = false; currentAction = null;
 }
     
-function executeAction(u, t, type, skillName = null) {
+async function executeAction(u, t, type, skillName = null) {
     if (type === 'attack') {
        u.curM += 3;
 
