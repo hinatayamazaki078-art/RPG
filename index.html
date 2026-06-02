@@ -348,6 +348,58 @@
             pointer-events: none; /* エフェクトがクリックの邪魔にならないようにする設定 */
         }
         
+    /* --- 画面いっぱいに画像を表示するための設定 --- */
+.gugenka-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: #000 !important;
+    z-index: 99999 !important; /* 一番手前に表示 */
+    display: none; /* ボタンを押すまで隠す */
+    justify-content: center;
+    align-items: center;
+}
+
+.gugenka-content {
+    position: relative;
+    width: 100% !important;
+    height: 100% !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.gugenka-img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important; /* 画像の比率を守って全画面表示 */
+}
+
+/* 右上の閉じるボタン（×） */
+.gugenka-close-btn {
+    position: absolute !important;
+    top: 20px !important;
+    right: 20px !important;
+    width: 44px !important;
+    height: 44px !important;
+    background: rgba(0, 0, 0, 0.6) !important;
+    color: #fff !important;
+    border: 2px solid #fff !important;
+    border-radius: 50% !important;
+    font-size: 24px !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    z-index: 100001 !important;
+}
+/* タイトルや説明文は全画面の時は邪魔なので消す設定 */
+.gugenka-title, .gugenka-text {
+    display: none !important;
+}
+    
     </style>
 </head>
 <body>
@@ -494,17 +546,11 @@
     <button onclick="closeTalkView()" style="height:45px; margin-top:15px;">拠点に戻る</button>
 </div>
 
-    <div id="gugenka-modal" class="gugenka-overlay" style="display: none;" onclick="closeGugenkaModal()">
+    <div id="gugenka-modal" class="gugenka-overlay" onclick="closeGugenkaModal()">
     <div class="gugenka-content" onclick="event.stopPropagation()">
-        <h2 class="gugenka-title">【具現化について】</h2>
-        <div class="gugenka-body">
-            <img src="1000.jpg" alt="具現化の画像" class="gugenka-img">
-            <p class="gugenka-text">
-                「具現化」とは、漢字の魂を現実の力へと変換する禁忌の術……。<br>
-                （ここに画像に関する会話や説明を自由に書けます！）
-            </p>
-        </div>
-        <button onclick="closeGugenkaModal()" class="gugenka-close-btn">閉じる</button>
+        <div class="gugenka-close-btn" onclick="closeGugenkaModal()">×</div>
+        
+        <img src="1000.jpg" alt="具現化の画像" class="gugenka-img">
     </div>
 </div>
     
