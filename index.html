@@ -1450,20 +1450,31 @@ function playGacha(times) {
     if (isFree) isFirstGachaFree = false; 
     
     document.getElementById('global-coin-count').innerText = coins;
-    openGachaOverlay(""); const display = document.getElementById('gacha-kanji-display');
-    let currentPull = 0; let results = [];
+    openGachaOverlay(""); 
+    const display = document.getElementById('gacha-kanji-display');
+    let currentPull = 0; 
+
     const pullNext = () => {
         if (currentPull >= times) {
-            display.style.display = 'none'; document.getElementById('gacha-result-name').innerText = "── 召喚結果 ──";
-            document.getElementById('gacha-close-btn').style.display = 'block'; saveData(); return;
+            display.style.display = 'none'; 
+            document.getElementById('gacha-result-name').innerText = "── 召喚結果 ──";
+            document.getElementById('gacha-close-btn').style.display = 'block'; 
+            saveData(); 
+            return;
         }
-        let count = 0; document.getElementById('gacha-result-name').innerText = `${currentPull + 1} 体目を召喚中...`;
+        let count = 0; 
+        document.getElementById('gacha-result-name').innerText = `${currentPull + 1} 体目を召喚中...`;
+        
         const interval = setInterval(() => {
             const randDisp = charData[Math.floor(Math.random() * charData.length)];
             display.innerHTML = `<span style="font-size:${randDisp.name.length >= 4 ? '40px' : '120px'};">${randDisp.name}</span>`;
             count++;
+            
             if (count > 12) {
-                clearInterval(interval); let selectedRarity = 1; const roll = Math.random() * 100;
+                clearInterval(interval); 
+                let selectedRarity = 1; 
+                const roll = Math.random() * 100;
+                
                 if (times === 10 && currentPull === 9) {
                     const totalWeight = 8 + 5 + 1.5 + 0.5; const fixedRoll = Math.random() * totalWeight;
                     if (fixedRoll < 8) selectedRarity = 3; else if (fixedRoll < 8 + 5) selectedRarity = 4; else if (fixedRoll < 8 + 5 + 1.5) selectedRarity = 5; else selectedRarity = 6;
@@ -1471,18 +1482,28 @@ function playGacha(times) {
                     if (roll < 70.0) selectedRarity = 1; else if (roll < 85.0) selectedRarity = 2; else if (roll < 93.0) selectedRarity = 3;
                     else if (roll < 98.0) selectedRarity = 4; else if (roll < 99.5) selectedRarity = 5; else selectedRarity = 6;
                 }
+                
                 const pool = charData.filter(c => c.r === selectedRarity);
-// 該当レアリティがいない場合、★3（r:3）を出すようにガードを入れる
-const base = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : charData.find(c => c.r === 3);
-const newUnit = {...base, id: Math.random(), auraId: null, auraIds: [], weaponId: null};
+                // 安全装置
+                const base = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : charData.find(c => c.r === 3);
+                const newUnit = {...base, id: Math.random(), auraId: null, auraIds: [], weaponId: null};
+                
+                // ★修正箇所：正しい変数（box）にキャラを追加する
+                box.push(newUnit);
                 
                 display.innerHTML = `<span style="font-size:${base.name.length >= 4 ? '50px' : '120px'};">${base.name}</span>`; display.className = "";
                 if (base.r >= 7) display.classList.add('rarity-god7'); else if (base.r === 6) display.classList.add('rarity-god'); else if (base.r >= 4) display.classList.add('rarity-high');
                 let borderCol = '#444', textCol = '#fff'; if (base.r >= 7) { borderCol = '#f00'; textCol = '#faa'; } else if (base.r === 6) { borderCol = '#f0f'; textCol = '#f0f'; } else if (base.r >= 4) { borderCol = '#ff0'; textCol = '#ff0'; }
                 document.getElementById('gacha-result-list').innerHTML += `<div class="gacha-res-item" style="color:${textCol}; border-color:${borderCol}"><span class="rarity">${getRarityStarsHTML(base.r)}</span><span>${base.name}</span></div>`;
+
+                // ★修正箇所：回数を進めてセーブし、次のガチャへ移行させる
+                currentPull++;
+                saveData();
+                setTimeout(pullNext, 200);
             }
         }, 30);
-    }; pullNext();
+    }; 
+    pullNext();
 }
 
 function playPremiumGacha(times) {
@@ -1500,7 +1521,7 @@ function playPremiumGacha(times) {
             display.style.display = 'none';
             document.getElementById('gacha-result-name').innerText = "── 上級召喚結果 ──";
             document.getElementById('gacha-close-btn').style.display = 'block';
-            saveData(); // 全終了時に保存
+            saveData(); 
             return;
         }
 
@@ -1523,13 +1544,11 @@ function playPremiumGacha(times) {
                 else selectedRarity = 7;
 
                 const pool = charData.filter(c => c.r === selectedRarity);
-                // 安全装置：該当レアリティがいなければ★3を出す
                 const base = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : charData.find(c => c.r === 3);
-
                 const newUnit = { ...base, id: Math.random(), auraId: null, auraIds: [], weaponId: null };
                 
-                // units配列に追加（box.pushは不要なので削除）
-                units.push(newUnit);
+                // ★修正箇所：box配列に追加する
+                box.push(newUnit);
 
                 display.innerHTML = `<span style="font-size:${base.name.length >= 4 ? '50px' : '120px'};">${base.name}</span>`;
                 display.className = "";
@@ -1544,7 +1563,7 @@ function playPremiumGacha(times) {
                 document.getElementById('gacha-result-list').innerHTML += `<div class="gacha-res-item" style="color:${textCol}; border-color:${borderCol}"><span class="rarity">${getRarityStarsHTML(base.r)}</span><span>${base.name}</span></div>`;
 
                 currentPull++;
-                saveData(); // 1体引くごとに保存（より安全）
+                saveData();
                 setTimeout(pullNextPremium, 200);
             }
         }, 40);
