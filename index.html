@@ -2498,18 +2498,18 @@ window.onload = () => {
 </script>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getFirestore, collection, addDoc, serverTimestamp, query, orderBy, limit, onSnapshot } 
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, serverTimestamp, query, orderBy, limit, where, deleteDoc, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
     from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
   // あなたのFirebaseプロジェクト設定（コンソールから取得したものに書き換えてください）
   const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "...",
-    appId: "..."
+    apiKey: "AIzaSyD2v_krmy0L-lzvLF6_AdoeI5dbXyJr4JM",
+    authDomain: "mojirpg-7ae6b.firebaseapp.com",
+    projectId: "mojirpg-7ae6b",
+    storageBucket: "mojirpg-7ae6b.firebasestorage.app",
+    messagingSenderId: "899351655158",
+    appId: "1:899351655158:web:8f30375e4188c2184232d7"
   };
 
   const app = initializeApp(firebaseConfig);
