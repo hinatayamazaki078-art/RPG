@@ -480,14 +480,17 @@
 
     <div id="view-talk" class="view">
     <h2 style="color:#0ff;">案内人との会話</h2>
+    
+    <!-- ↓ここにあったボタンを… -->
     <div style="padding: 15px; font-size: 13px; line-height: 1.8; background: #111; border: 1px solid #333; flex-grow: 1; overflow-y: auto;">
-        
-        <!-- ▼ ここに「具現化について」のボタンを追加しました！ -->
-        <button onclick="openGugenkaModal()" class="menu-btn" style="width: 100%; text-align: left; padding-left: 15px; margin-bottom: 10px; border-color: #0ff;">
-            💬 具現化について
-        </button>
-        
+        <p style="text-align:center; color:#888;">（ここに会話一覧が表示されます）</p>
     </div>
+    
+    <!-- ★ココに引っ越し！ここならプログラムに絶対に消されません★ -->
+    <button onclick="openGugenkaModal()" class="menu-btn" style="width: 100%; text-align: left; padding-left: 15px; margin-top: 10px; border-color: #0ff; background: linear-gradient(135deg, #111, #222);">
+        💬 具現化について
+    </button>
+    
     <button onclick="closeTalkView()" style="height:45px; margin-top:15px;">拠点に戻る</button>
 </div>
 
@@ -2421,7 +2424,21 @@ function closeGachaList() {
     document.getElementById('view-home').classList.add('active');
 }
     
-function next() {
+function openGugenkaModal() {
+    const modal = document.getElementById('gugenka-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}
+
+function closeGugenkaModal() {
+    const modal = document.getElementById('gugenka-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+    
+    function next() {
     updateUI();
     if (enemies.every(e => e.curH <= 0)) { 
         party.forEach(p => { p.curH = p.maxH; p.curM = p.m; p.poison = false; p.charm = 0; p.guard = false; p.usedPhoenix = false; });
