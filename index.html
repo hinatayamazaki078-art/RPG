@@ -361,6 +361,12 @@
         <div id="effect-layer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100;"></div>
     </div>
 
+    <div style="padding: 0 10px 5px 10px; display: flex; align-items: center;">
+        <span style="color:#0aa; font-size:11px; margin-right:5px;">🎁 贈り物:</span>
+        <input type="text" id="gift-code-input" placeholder="4桁コード" maxlength="4" style="width: 70px; background: #111; color: #0ff; border: 1px solid #0aa; font-size: 11px; padding: 3px; text-align: center; font-family: inherit;">
+        <button onclick="applyGiftCode()" style="background: #022; color: #0ff; border: 1px solid #0aa; margin-left: 5px; padding: 2px 10px; font-size: 11px; cursor: pointer; border-radius: 3px;">受取</button>
+    </div>
+
     <button id="chat-open-btn" onclick="toggleChat(true)">💬 雑談</button>
 
     <div id="chat-overlay" style="display: none;">
@@ -2536,6 +2542,56 @@ function getRarityStarsHTML(rarityLevel) {
         
         // 画像のような紫がかったピンクのカラーコードを指定
         return `<span style="color: #9C27B0;">${'★'.repeat(pinkStarCount)}</span>`; 
+    }
+}
+
+// ギフトコード処理
+function applyGiftCode() {
+    const input = document.getElementById('gift-code-input');
+    const code = input.value.trim();
+
+    if (code === '4649') {
+        // 重複受け取り防止チェック
+        if (localStorage.getItem('gift_4649_claimed')) {
+            alert("このギフトコードはすでに使用済みです。");
+            return;
+        }
+
+        // キャラクターデータの作成（既存のbox配列の形式に合わせる）
+        const raiun = {
+            id: Date.now() + Math.random(), // 重複しないユニークID
+            name: "雷鰻",
+            rarity: "GOD",
+            p: 520,  // 攻撃力
+            h: 4800, // HP
+            m: 350,  // 魔力
+            s: 125,  // 速度
+            lv: 1,
+            exp: 0,
+            skills: ["雷撃", "帯電", "神速", "天鳴"], // スキル構成
+            auraId: null,
+            weaponId: null
+        };
+
+        // 手持ち（box）に追加
+        box.push(raiun);
+
+        // 使用済みフラグを保存
+        localStorage.setItem('gift_4649_claimed', 'true');
+
+        // システムのセーブ関数を呼び出して保存
+        if (typeof saveData === 'function') saveData();
+
+        // 画面の表示を更新（強化画面やホーム画面に反映させる）
+        if (typeof updateHomeUI === 'function') updateHomeUI();
+        if (typeof renderBox === 'function') renderBox();
+
+        alert("🎁 コード認証成功！\n【雷鰻】が仲間に加わりました！");
+        input.value = ""; // 入力欄をクリア
+    } else if (code === "") {
+        alert("コードを入力してください。");
+    } else {
+        alert("無効なコードです。");
     }
 }
     
