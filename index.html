@@ -481,9 +481,28 @@
     <div id="view-talk" class="view">
     <h2 style="color:#0ff;">案内人との会話</h2>
     <div style="padding: 15px; font-size: 13px; line-height: 1.8; background: #111; border: 1px solid #333; flex-grow: 1; overflow-y: auto;">
-        <p style="text-align:center; color:#888;">（ここに会話一覧が表示されます）</p>
+        
+        <!-- ▼ ここに「具現化について」のボタンを追加しました！ -->
+        <button onclick="openGugenkaModal()" class="menu-btn" style="width: 100%; text-align: left; padding-left: 15px; margin-bottom: 10px; border-color: #0ff;">
+            💬 具現化について
+        </button>
+        
     </div>
     <button onclick="closeTalkView()" style="height:45px; margin-top:15px;">拠点に戻る</button>
+</div>
+
+    <div id="gugenka-modal" class="gugenka-overlay" style="display: none;" onclick="closeGugenkaModal()">
+    <div class="gugenka-content" onclick="event.stopPropagation()">
+        <h2 class="gugenka-title">【具現化について】</h2>
+        <div class="gugenka-body">
+            <img src="ここに画像のURL" alt="具現化の画像" class="gugenka-img">
+            <p class="gugenka-text">
+                「具現化」とは、漢字の魂を現実の力へと変換する禁忌の術……。<br>
+                （ここに画像に関する会話や説明を自由に書けます！）
+            </p>
+        </div>
+        <button onclick="closeGugenkaModal()" class="gugenka-close-btn">閉じる</button>
+    </div>
 </div>
     
     <div id="view-manual" class="view">
