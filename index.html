@@ -2546,6 +2546,7 @@ function getRarityStarsHTML(rarityLevel) {
 }
 
 // ギフトコード処理
+// ギフトコード処理（既存データから取得する修正版）
 function applyGiftCode() {
     const input = document.getElementById('gift-code-input');
     const code = input.value.trim();
@@ -2557,20 +2558,23 @@ function applyGiftCode() {
             return;
         }
 
-        // キャラクターデータの作成（既存のbox配列の形式に合わせる）
+        // 【修正】既存のマスターデータ配列から「雷鰻」を検索
+        // ※もしゲーム内のマスターデータ配列名が `charData` ではない場合（例: `charaList` や `kanjiData` など）、その変数名に書き換えてください。
+        const masterChar = charData.find(c => c.name === "雷鰻");
+        
+        if (!masterChar) {
+            alert("エラー：ゲームのマスターデータ内に「雷鰻」が見つかりません。");
+            return;
+        }
+
+        // 既存のデータをベースに、手持ち（box）用の個別データを作成
         const raiun = {
-            id: Date.now() + Math.random(), // 重複しないユニークID
-            name: "雷鰻",
-            rarity: "GOD",
-            p: 520,  // 攻撃力
-            h: 4800, // HP
-            m: 350,  // 魔力
-            s: 125,  // 速度
-            lv: 1,
-            exp: 0,
-            skills: ["雷撃", "帯電", "神速", "天鳴"], // スキル構成
-            auraId: null,
-            weaponId: null
+            ...masterChar,                 // 元のステータス（P、H、M、S、スキル等）を丸ごとコピー
+            id: Date.now() + Math.random(), // 個体別のユニークIDを発行（既存システムと衝突させないため）
+            lv: 1,                         // 初期レベル
+            exp: 0,                        // 初期経験値
+            auraId: null,                  // オーラなし
+            weaponId: null                 // 装備なし
         };
 
         // 手持ち（box）に追加
@@ -2582,7 +2586,7 @@ function applyGiftCode() {
         // システムのセーブ関数を呼び出して保存
         if (typeof saveData === 'function') saveData();
 
-        // 画面の表示を更新（強化画面やホーム画面に反映させる）
+        // 画面の表示を更新
         if (typeof updateHomeUI === 'function') updateHomeUI();
         if (typeof renderBox === 'function') renderBox();
 
