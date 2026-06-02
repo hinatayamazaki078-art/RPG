@@ -433,6 +433,11 @@
 </div>
 
     <div id="view-home" class="view active">
+
+        <div id="time-reward-info" style="font-size: 11px; color: #aaa; margin: 5px 0; text-align: center;">
+        起動報酬ループ進行中: <span id="current-play-time">0分0秒</span>
+    </div>
+        
         <h2>深淵の拠点</h2>
         <div class="guide-text">※キャラを選択して種や装具を押すと付与・装備！</div>
         
@@ -914,6 +919,8 @@ let isGlobalDomination = false;
 let selectedBattleSkill = null;
 let isShadowKingMode = false;
 let currentKingData = null;
+    let playTimeSeconds = 0;       // 現在のループ内での累積起動時間（秒）
+let rewardedMilestones = [];
 let playerIcon = '👤'; // 現在設定中のアイコン
 let ownedIcons = ['👤']; // 所持しているアイコンの配列（今後の拡張用）
 // ガチャから出る全アイコンのリスト（ここを自由に入れ替えてください）
@@ -1012,10 +1019,13 @@ function saveData() {
     normalizeBoxData();
     const playerName = document.getElementById('player-name').innerText;
     // playerIcon と ownedIcons を追加
+    
+    localStorage.setItem('kanjiRpg_playTimeSeconds', playTimeSeconds);
+localStorage.setItem('kanjiRpg_rewardedMilestones', JSON.stringify(rewardedMilestones));
     localStorage.setItem('kanji_rpg_v2_data', JSON.stringify({ 
         coins, stones, box, selectedIds, seeds, auras, weapons, maxClearedStage, 
         isFirstGachaFree, playerName, playerLevel, playerExp, playerIcon, ownedIcons
-        ,crystals
+        ,crystals, playTimeSeconds, rewardedMilestones
     })); 
 }
 
@@ -1029,6 +1039,8 @@ function loadData() {
         seeds = d.seeds || []; auras = d.auras || []; weapons = d.weapons || []; 
         maxClearedStage = d.maxClearedStage || 0; 
         isFirstGachaFree = d.isFirstGachaFree !== undefined ? d.isFirstGachaFree : true;
+        playTimeSeconds = parseInt(localStorage.getItem('kanjiRpg_playTimeSeconds')) || 0;
+rewardedMilestones = JSON.parse(localStorage.getItem('kanjiRpg_rewardedMilestones')) || [];
         
         // ★ 保存されたレベルと経験値を読み込む（なければ初期値） ★
         playerLevel = d.playerLevel || 1;
@@ -1038,6 +1050,8 @@ function loadData() {
 
         playerIcon = d.playerIcon || '👤';
         ownedIcons = d.ownedIcons || ['👤'];
+        playTimeSeconds = d.playTimeSeconds || 0;
+        rewardedMilestones = d.rewardedMilestones || [];
         document.getElementById('player-icon').innerHTML = playerIcon;
         
         // 保存された名前があれば反映する
@@ -1852,6 +1866,8 @@ function applySeed(idx) {
 
 // ▼▼▼ ここから入れ替え ▼▼▼
 let crystals = 0; // 具現ノ結晶の所持数（上の方の let coins = 0; の仲間に入れてもOKです）
+    let playTimeSeconds = 0;
+let rewardedMilestones = [];
 
 function playCrystalGacha() {
     const cost = 50000;
@@ -2171,6 +2187,13 @@ function startTargetSelection(type, skillName = null) {
     updateUI();
 }
 
+function updatePlayTimeUI() {
+    let min = Math.floor(playTimeSeconds / 60);
+    let sec = playTimeSeconds % 60;
+    const el = document.getElementById('current-play-time');
+    if (el) el.innerText = `${min}分${sec}秒`;
+}
+    
 function onUnitClick(targetId) {
     if (!isSelecting) return;
     const target = [...party, ...enemies].find(char => char.id === targetId); if (!target) return;
@@ -2486,7 +2509,46 @@ function addLog(msg) {
     const l = document.getElementById('log'); l.innerHTML += `<div>${msg}</div>`; l.scrollTop = l.scrollHeight;
 }
 
-window.onload = () => {
+function updatePlayTimeUI() {
+    let min = Math.floor(playTimeSeconds / 60);
+    let sec = playTimeSeconds % 60;
+    const el = document.getElementById('current-play-time');
+    if (el) el.innerText = `${min}分${sec}秒`;
+}
+
+function checkTimeRewards() {
+    let minutes = playTimeSeconds / 60;
+
+    if (minutes >= 10 && !rewardedMilestones.includes('10m')) {
+        coins += 10; rewardedMilestones.push('10m');
+        addLog("【時間報酬】計10分達成！10コイン獲得！");
+        document.getElementById('global-coin-count').innerText = coins; saveData();
+    }
+    if (minutes >= 30 && !rewardedMilestones.includes('30m')) {
+        coins += 20; rewardedMilestones.push('30m');
+        addLog("【時間報酬】計30分達成！20コイン獲得！");
+        document.getElementById('global-coin-count').innerText = coins; saveData();
+    }
+    if (minutes >= 60 && !rewardedMilestones.includes('1h')) {
+        coins += 50; rewardedMilestones.push('1h');
+        addLog("【時間報酬】計1時間達成！50コイン獲得！");
+        document.getElementById('global-coin-count').innerText = coins; saveData();
+    }
+    if (minutes >= 120 && !rewardedMilestones.includes('2h')) {
+        coins += 100; rewardedMilestones.push('2h');
+        addLog("【時間報酬】計2時間達成！100コイン獲得！");
+        document.getElementById('global-coin-count').innerText = coins; saveData();
+    }
+    if (minutes >= 180 && !rewardedMilestones.includes('3h')) {
+        stones = (stones || 0) + 5; 
+        document.getElementById('global-stone-count').innerText = stones; // 石の表示も更新
+        addLog("【時間報酬】計3時間達成！強化石5個獲得！");
+        addLog("起動時間がリセットされ、次の周回（10分）に戻ります。");
+        playTimeSeconds = 0; rewardedMilestones = []; saveData();
+    }
+}
+    
+    window.onload = () => {
     // 1. まずデータを読み込む
     if (!loadData()) {
         // 2. セーブデータがない（初回起動）の場合の初期化
@@ -2521,6 +2583,12 @@ window.onload = () => {
     
     // UIの更新
     updateHomeUI();
+        // ★追加：1秒ごとにタイマーを進めてチェックする
+    setInterval(() => {
+        playTimeSeconds++; 
+        checkTimeRewards(); 
+        updatePlayTimeUI(); 
+    }, 1000);
 };
 </script>
 
