@@ -400,6 +400,18 @@
     display: none !important;
 }
     
+    /* ダメージや回復のポップアップアニメーション */
+@keyframes floatUpText {
+    0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -100%) scale(1.2); }
+    100% { opacity: 0; transform: translate(-50%, -150%) scale(1); }
+}
+@keyframes floatUpCrit {
+    0% { opacity: 1; transform: translate(-50%, -50%) scale(1.5); }
+    30% { transform: translate(-50%, -80%) scale(1.8); }
+    100% { opacity: 0; transform: translate(-50%, -150%) scale(1.2); }
+}
+    
     </style>
 </head>
 <body>
@@ -2337,7 +2349,11 @@ function executeAction(u, t, type, skillName = null) {
     if (type === 'attack') {
        u.curM += 3;
 
-        if (u.blind > 0 && Math.random() < 0.3) { addLog("💫【閃光】" + u.name + "の攻撃は外れた！ (MP+3)"); return next(); }
+        if (u.blind > 0 && Math.random() < 0.3) { 
+            addLog("💫【閃光】" + u.name + "の攻撃は外れた！ (MP+3)"); 
+            showDamageNumber(t.id, 'Miss', 'miss'); // ★追加
+            return next(); 
+        }
         
         let isEvaded = false;
         if (t.auras) {
@@ -2345,8 +2361,16 @@ function executeAction(u, t, type, skillName = null) {
             if (evadeAu && Math.random() * 100 < evadeAu.value) isEvaded = true;
         }
         if (t.evasionBuff > 0 && Math.random() < 0.5) isEvaded = true;
-        if (isEvaded) { addLog("💨【回避】" + t.name + "は避けた！ (MP+3)"); return next(); }
-        if (t.invincible > 0) { addLog("🛡️【強固な甲羅】" + t.name + "へのダメージは0！ (MP+3)"); return next(); }
+        if (isEvaded) { 
+            addLog("💨【回避】" + t.name + "は避けた！ (MP+3)"); 
+            showDamageNumber(t.id, 'Miss', 'miss'); // ★追加
+            return next(); 
+        }
+        if (t.invincible > 0) { 
+            addLog("🛡️【強固な甲羅】" + t.name + "へのダメージは0！ (MP+3)"); 
+            showDamageNumber(t.id, 0, 'miss'); // ★追加
+            return next(); 
+        }
         
         let dmg = u.p; if (isGlobalDomination) dmg = Math.ceil(dmg / 2); if (u.atkBuff > 0) dmg *= 2;
         let isCrit = false; 
@@ -2356,6 +2380,10 @@ function executeAction(u, t, type, skillName = null) {
         }
         if (t.guard) dmg = 1;
         t.curH = Math.max(0, t.curH - dmg); u.lastDmg = dmg;
+        
+        // ★追加：ここでダメージ数値を表示
+        showDamageNumber(t.id, dmg, isCrit ? 'crit' : 'normal');
+
         if (isCrit) addLog("💥" + u.name + "の会心の一撃：" + dmg + "ダメ (MP+3)"); else addLog(u.name + "の攻撃：" + dmg + "ダメ (MP+3)");
         checkAndRevivePhoenix(t);
     } else {
@@ -2558,7 +2586,7 @@ function updateUI() {
         if (u.deathTrap) badgeHtml += '<span style="color:#a0a; font-size:10px;">[死]</span>';
         if (u.evasionBuff > 0) badgeHtml += '<span style="color:#0ff; font-size:10px;">[避↑]</span>';
         
-        return `<div class="${classes}" onclick="onUnitClick(${u.id})">
+        return `<div id="unit-box-${u.id}" class="${classes}" onclick="onUnitClick(${u.id})">
     <div class="kanji ${auraClass}" style="font-size:28px; ${auraStyle}">${u.name}</div>
             <div class="hp-bar-bg"><div class="hp-bar-fill" style="width:${hpPct}%;"></div></div>
             <div class="stats-text">${statsStr}</div>
@@ -2569,7 +2597,57 @@ function updateUI() {
     document.getElementById('enemy-area').innerHTML = enemies.map(draw).join('');
 }
 
-// --- ショップ（商人の店）機能 ---
+// ▼ 追加：ダメージや回復の数字をポップアップ表示する関数
+function showDamageNumber(targetId, amount, type = 'normal') {
+    const targetEl = document.getElementById(`unit-box-${targetId}`);
+    if (!targetEl) return;
+
+    // キャラ枠の画面上の座標を取得
+    const rect = targetEl.getBoundingClientRect();
+    const effect = document.createElement('div');
+    effect.innerText = amount;
+    
+    // 複数の攻撃が重なっても見えやすいように、少しだけ位置をランダムに散らす
+    const randomX = (Math.random() - 0.5) * 20; 
+    const randomY = (Math.random() - 0.5) * 20;
+    
+    // 基本スタイル設定
+    effect.style.position = 'fixed'; 
+    effect.style.left = (rect.left + rect.width / 2 + randomX) + 'px';
+    effect.style.top = (rect.top + rect.height / 2 + randomY) + 'px';
+    effect.style.pointerEvents = 'none'; // クリックの邪魔にならないようにする
+    effect.style.zIndex = '9999';
+    effect.style.fontWeight = 'bold';
+    effect.style.textShadow = '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000'; // 黒フチドリ
+    
+    // タイプ別（通常、会心、回復、ミス）の演出分岐
+    if (type === 'normal') {
+        effect.style.color = '#ff4444';
+        effect.style.fontSize = '26px';
+        effect.style.animation = 'floatUpText 0.8s ease-out forwards';
+    } else if (type === 'crit') {
+        effect.style.color = '#ffcc00';
+        effect.style.fontSize = '34px';
+        effect.style.animation = 'floatUpCrit 1s ease-out forwards';
+    } else if (type === 'heal') {
+        effect.style.color = '#44ff44';
+        effect.style.fontSize = '26px';
+        effect.innerText = '+' + amount;
+        effect.style.animation = 'floatUpText 0.8s ease-out forwards';
+    } else if (type === 'miss') {
+        effect.style.color = '#cccccc';
+        effect.style.fontSize = '20px';
+        effect.innerText = amount; // 「Miss」等の文字を入れる想定
+        effect.style.animation = 'floatUpText 0.8s ease-out forwards';
+    }
+
+    document.body.appendChild(effect);
+    
+    // アニメーション終了後に要素を削除
+    setTimeout(() => effect.remove(), 1000);
+}
+    
+    // --- ショップ（商人の店）機能 ---
 function openMerchant() {
     // 全てのビューを非表示にする
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
