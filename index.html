@@ -2393,43 +2393,43 @@ function executeAction(u, t, type, skillName = null) {
         
         addLog(u.name + "：【" + sName + "】"); const targets = u.isP ? enemies : party; const allies = u.isP ? party : enemies;
         
-        if (sName === '回復') { t.curH = Math.min(t.maxH, t.curH + Math.floor(t.maxH*0.3)); addLog(t.name + "が30%回復！"); }
+        if (sName === '回復') { let heal = Math.floor(t.maxH*0.3); t.curH = Math.min(t.maxH, t.curH + heal); showDamageNumber(t.id, heal, 'heal'); addLog(t.name + "が30%回復！"); }
         else if (sName === '閃光') { t.blind = 1; addLog(t.name + "の命中率が低下！"); }
-        else if (sName === '斬撃') { if(t.invincible>0) addLog("無効！"); else { t.curH = Math.max(0, t.curH - 5); checkAndRevivePhoenix(t); addLog(t.name+"に5ダメ！");} }
-        else if (sName === 'ムチ') { targets.forEach(e => { if(e.curH>0) { if(e.invincible>0)return; e.curH = Math.max(0, e.curH - 2); checkAndRevivePhoenix(e); }}); addLog("全体に2ダメ！");}
-        else if (sName === '大回復') { t.curH = Math.min(t.maxH, t.curH + Math.floor(t.maxH*0.6)); addLog(t.name + "が60%回復！"); }
+        else if (sName === '斬撃') { if(t.invincible>0) { showDamageNumber(t.id, 0, 'miss'); addLog("無効！"); } else { t.curH = Math.max(0, t.curH - 5); showDamageNumber(t.id, 5, 'normal'); checkAndRevivePhoenix(t); addLog(t.name+"に5ダメ！");} }
+        else if (sName === 'ムチ') { targets.forEach(e => { if(e.curH>0) { if(e.invincible>0){ showDamageNumber(e.id, 0, 'miss'); return; } e.curH = Math.max(0, e.curH - 2); showDamageNumber(e.id, 2, 'normal'); checkAndRevivePhoenix(e); }}); addLog("全体に2ダメ！");}
+        else if (sName === '大回復') { let heal = Math.floor(t.maxH*0.6); t.curH = Math.min(t.maxH, t.curH + heal); showDamageNumber(t.id, heal, 'heal'); addLog(t.name + "が60%回復！"); }
         else if (sName === '麻痺') { if (Math.random() < 0.3) { t.paralyze = 1; addLog(t.name+"は麻痺した！"); } else addLog("効かなかった..."); }
-        else if (sName === '捨て身') { if(t.invincible>0) addLog("無効！"); else { t.curH = Math.max(0, t.curH - 10); checkAndRevivePhoenix(t); addLog(t.name+"に10ダメ！");} }
+        else if (sName === '捨て身') { if(t.invincible>0) { showDamageNumber(t.id, 0, 'miss'); addLog("無効！"); } else { t.curH = Math.max(0, t.curH - 10); showDamageNumber(t.id, 10, 'normal'); checkAndRevivePhoenix(t); addLog(t.name+"に10ダメ！");} }
         else if (sName === '応援') { t.atkBuff = 1; addLog(t.name+"の攻撃力が倍化！"); }
         else if (sName === '攻撃増幅薬') { allies.forEach(a => { if(a.curH>0) a.atkBuff = 1; }); addLog("味方全員の攻撃力が倍化！"); }
-        else if (sName === 'ブリザード') { targets.forEach(e => { if(e.curH>0) { if(e.invincible<=0) {e.curH = Math.max(0, e.curH - 10); checkAndRevivePhoenix(e);} e.s -= 2; }}); addLog("全体に10ダメ＆素早さ低下！"); }
+        else if (sName === 'ブリザード') { targets.forEach(e => { if(e.curH>0) { if(e.invincible<=0) {e.curH = Math.max(0, e.curH - 10); showDamageNumber(e.id, 10, 'normal'); checkAndRevivePhoenix(e);} else { showDamageNumber(e.id, 0, 'miss'); } e.s -= 2; }}); addLog("全体に10ダメ＆素早さ低下！"); }
         else if (sName === '支配') { isGlobalDomination = true; addLog("支配空間展開！全員の攻撃力が半減！"); }
-        else if (sName === '妖精の粉') { allies.forEach(a => { if(a.curH>0) a.curH = Math.min(a.maxH, a.curH + Math.floor(a.maxH*0.8)); }); addLog("味方全員が80%回復！"); }
-        else if (sName === 'メテオ') { if(t.invincible>0) addLog("無効！"); else { t.curH = Math.max(0, t.curH - 35); checkAndRevivePhoenix(t); addLog(t.name+"に35ダメ！");} }
+        else if (sName === '妖精の粉') { allies.forEach(a => { if(a.curH>0) { let heal = Math.floor(a.maxH*0.8); a.curH = Math.min(a.maxH, a.curH + heal); showDamageNumber(a.id, heal, 'heal'); } }); addLog("味方全員が80%回復！"); }
+        else if (sName === 'メテオ') { if(t.invincible>0) { showDamageNumber(t.id, 0, 'miss'); addLog("無効！"); } else { t.curH = Math.max(0, t.curH - 35); showDamageNumber(t.id, 35, 'normal'); checkAndRevivePhoenix(t); addLog(t.name+"に35ダメ！");} }
         else if (sName === 'デストラップ') { t.deathTrap = true; addLog(t.name+"に死の罠を仕掛けた！"); }
         else if (sName === 'フェニックス') { t.curH = t.maxH; t.usedPhoenix = false; addLog(t.name+"が完全復活！"); }
         else if (sName === '蘇りの歌') { allies.forEach(a => { if(a.curH<=0) { a.curH = a.maxH; a.usedPhoenix = false; } }); addLog("倒れた味方全員が完全復活！"); }
         else if (sName === '強固な甲羅') { allies.forEach(a => { if(a.curH>0) a.invincible = 1; }); addLog("味方全員の受けるダメージが0になった！"); }
-        else if (sName === '天変地異') { targets.forEach(e => { if(e.curH>0) { if(e.invincible<=0) {e.curH = Math.max(0, e.curH - 150); checkAndRevivePhoenix(e);} }}); addLog("全体に150の絶大ダメージ！"); }
+        else if (sName === '天変地異') { targets.forEach(e => { if(e.curH>0) { if(e.invincible<=0) {e.curH = Math.max(0, e.curH - 150); showDamageNumber(e.id, 150, 'normal'); checkAndRevivePhoenix(e);} else { showDamageNumber(e.id, 0, 'miss'); } }}); addLog("全体に150の絶大ダメージ！"); }
         else if (sName === 'デスペラードヒューリー') { 
             let count = 0;
             const hit = () => {
                 const alive = targets.filter(e => e.curH > 0); if(alive.length === 0) return;
                 const trg = alive[Math.floor(Math.random()*alive.length)];
-                if(trg.invincible<=0) { trg.curH = Math.max(0, trg.curH - 50); addLog(trg.name+"に50ダメ！"); checkAndRevivePhoenix(trg); } else addLog("無効！");
-                count++; if(count < 5 && targets.some(e=>e.curH>0)) hit();
+                if(trg.invincible<=0) { trg.curH = Math.max(0, trg.curH - 50); showDamageNumber(trg.id, 50, 'normal'); addLog(trg.name+"に50ダメ！"); checkAndRevivePhoenix(trg); } else { showDamageNumber(trg.id, 0, 'miss'); addLog("無効！"); }
+                count++; if(count < 5 && targets.some(e=>e.curH>0)) setTimeout(hit, 150); // ★連続攻撃のポンポン感を出すために少し遅延を追加
             }; hit();
         }
         else if (sName === '精霊の歌') { t.curH = Math.floor(t.maxH / 2); t.usedPhoenix = false; addLog(t.name+"が半分の体力で復活！"); }
-        else if (sName === '感電') { targets.forEach(e => { if(e.curH>0 && e.invincible<=0) { e.curH = Math.max(0, e.curH - 3); checkAndRevivePhoenix(e); } }); }
-        else if (sName === '御廚子' || sName === '伏魔御廚子') { targets.forEach(e => { if(e.curH>0 && e.invincible<=0) { e.curH = Math.max(0, e.curH - 30); checkAndRevivePhoenix(e); } }); addLog("領域展開。全体に30の固定ダメージ！"); }
-        else if (sName === '巨大触手') { targets.forEach(e => { if(e.curH>0 && e.invincible<=0) { e.curH = Math.max(0, e.curH - 10); checkAndRevivePhoenix(e); } }); addLog("全体に10ダメージ！"); }
-        else if (sName === '炎のブレス') { targets.forEach(e => { if(e.curH>0 && e.invincible<=0) { e.curH = Math.max(0, e.curH - 20); checkAndRevivePhoenix(e); } }); addLog("全体に20ダメージ！"); }
+        else if (sName === '感電') { targets.forEach(e => { if(e.curH>0) { if(e.invincible<=0) { e.curH = Math.max(0, e.curH - 3); showDamageNumber(e.id, 3, 'normal'); checkAndRevivePhoenix(e); } else { showDamageNumber(e.id, 0, 'miss'); } } }); }
+        else if (sName === '御廚子' || sName === '伏魔御廚子') { targets.forEach(e => { if(e.curH>0) { if(e.invincible<=0) { e.curH = Math.max(0, e.curH - 30); showDamageNumber(e.id, 30, 'normal'); checkAndRevivePhoenix(e); } else { showDamageNumber(e.id, 0, 'miss'); } } }); addLog("領域展開。全体に30の固定ダメージ！"); }
+        else if (sName === '巨大触手') { targets.forEach(e => { if(e.curH>0) { if(e.invincible<=0) { e.curH = Math.max(0, e.curH - 10); showDamageNumber(e.id, 10, 'normal'); checkAndRevivePhoenix(e); } else { showDamageNumber(e.id, 0, 'miss'); } } }); addLog("全体に10ダメージ！"); }
+        else if (sName === '炎のブレス') { targets.forEach(e => { if(e.curH>0) { if(e.invincible<=0) { e.curH = Math.max(0, e.curH - 20); showDamageNumber(e.id, 20, 'normal'); checkAndRevivePhoenix(e); } else { showDamageNumber(e.id, 0, 'miss'); } } }); addLog("全体に20ダメージ！"); }
         else if (sName === '達磨さんが転んだ') { darumaTrigger = u.isP; addLog("達磨がこちらを凝視している...（罠発動）"); }
-        else if (sName === '神の審判') { if(t.invincible<=0) { const judgeDmg = Math.random() < 0.5 ? 10 : 60; t.curH = Math.max(0, t.curH - judgeDmg); addLog(`${t.name}に ${judgeDmg} の審判ダメージ！`); checkAndRevivePhoenix(t); } }
-        else if (sName === '連撃') { if(t.invincible<=0) { let d1 = u.p; t.curH = Math.max(0, t.curH - d1); checkAndRevivePhoenix(t); let d2 = u.p; t.curH = Math.max(0, t.curH - d2); checkAndRevivePhoenix(t); u.lastDmg = d1 + d2; addLog(`連続斬撃！ ${t.name}に ${d1}、${d2} ダメージ！`); } }
-        else if (sName === 'マジ殴り') { if(t.invincible<=0) { t.curH = Math.max(0, t.curH - 200); addLog(`必殺のマジ殴り！ ${t.name}に200ダメ！`); checkAndRevivePhoenix(t); } }
-        else if (sName === 'イーター') { if(t.invincible<=0) { t.curH = Math.max(0, t.curH - 30); u.curH = Math.min(u.maxH, u.curH + 30); addLog(`魂を喰らう！ 30ダメ＆30回復！`); checkAndRevivePhoenix(t); } }
+        else if (sName === '神の審判') { if(t.invincible<=0) { const judgeDmg = Math.random() < 0.5 ? 10 : 60; t.curH = Math.max(0, t.curH - judgeDmg); showDamageNumber(t.id, judgeDmg, 'normal'); addLog(`${t.name}に ${judgeDmg} の審判ダメージ！`); checkAndRevivePhoenix(t); } else { showDamageNumber(t.id, 0, 'miss'); } }
+        else if (sName === '連撃') { if(t.invincible<=0) { let d1 = u.p; t.curH = Math.max(0, t.curH - d1); showDamageNumber(t.id, d1, 'normal'); checkAndRevivePhoenix(t); let d2 = u.p; t.curH = Math.max(0, t.curH - d2); setTimeout(()=>showDamageNumber(t.id, d2, 'normal'), 200); checkAndRevivePhoenix(t); u.lastDmg = d1 + d2; addLog(`連続斬撃！ ${t.name}に ${d1}、${d2} ダメージ！`); } else { showDamageNumber(t.id, 0, 'miss'); } }
+        else if (sName === 'マジ殴り') { if(t.invincible<=0) { t.curH = Math.max(0, t.curH - 200); showDamageNumber(t.id, 200, 'normal'); addLog(`必殺のマジ殴り！ ${t.name}に200ダメ！`); checkAndRevivePhoenix(t); } else { showDamageNumber(t.id, 0, 'miss'); } }
+        else if (sName === 'イーター') { if(t.invincible<=0) { t.curH = Math.max(0, t.curH - 30); showDamageNumber(t.id, 30, 'normal'); u.curH = Math.min(u.maxH, u.curH + 30); showDamageNumber(u.id, 30, 'heal'); addLog(`魂を喰らう！ 30ダメ＆30回復！`); checkAndRevivePhoenix(t); } else { showDamageNumber(t.id, 0, 'miss'); } }
         else if (sName === '魅了') { 
             if (Math.random() < 0.3) {
                 t.charm = 2; addLog(`💘 ${t.name}を魅了した！`); 
@@ -2441,27 +2441,34 @@ function executeAction(u, t, type, skillName = null) {
             const skillObj = u.skillsList && u.skillsList.find(sk => sk.name === 'グレイデンスレイヴ');
             if (skillObj) skillObj.used = true;
             targets.forEach(e => {
-                if (e.curH > 0 && e.invincible <= 0) {
-                    e.curH = Math.max(0, e.curH - 30);
-                    checkAndRevivePhoenix(e);
+                if (e.curH > 0) {
+                    if (e.invincible <= 0) {
+                        e.curH = Math.max(0, e.curH - 30);
+                        showDamageNumber(e.id, 30, 'normal');
+                        checkAndRevivePhoenix(e);
+                    } else { showDamageNumber(e.id, 0, 'miss'); }
                 }
             });
             addLog("真の力が解放された！全体に30ダメージ！");
         }
-        else if (sName === '吸血') { u.curH = Math.min(u.maxH, u.curH + 3); }
-        else if (sName === '血欲') { if(t.invincible<=0) { t.curH = Math.max(0, t.curH - 2); u.curH = Math.min(u.maxH, u.curH + 2); checkAndRevivePhoenix(t); } }
-        else if (sName === '物真似') { if(t.invincible<=0) { t.curH = Math.max(0, t.curH - u.lastDmg); checkAndRevivePhoenix(t); } }
-        else if (sName === '賢者の知恵') { t.curH = Math.min(t.maxH, t.curH + 5); } else if (sName === '鱗粉') targets.forEach(e => { if(e.curH>0) e.poison = true; });
-        else if (sName === '咆哮') targets.forEach(e => { if(e.curH>0 && e.invincible<=0) { e.curH = Math.max(0, e.curH - 8); checkAndRevivePhoenix(e); } });
+        else if (sName === '吸血') { u.curH = Math.min(u.maxH, u.curH + 3); showDamageNumber(u.id, 3, 'heal'); }
+        else if (sName === '血欲') { if(t.invincible<=0) { t.curH = Math.max(0, t.curH - 2); showDamageNumber(t.id, 2, 'normal'); u.curH = Math.min(u.maxH, u.curH + 2); showDamageNumber(u.id, 2, 'heal'); checkAndRevivePhoenix(t); } else { showDamageNumber(t.id, 0, 'miss'); } }
+        else if (sName === '物真似') { if(t.invincible<=0) { t.curH = Math.max(0, t.curH - u.lastDmg); showDamageNumber(t.id, u.lastDmg, 'normal'); checkAndRevivePhoenix(t); } else { showDamageNumber(t.id, 0, 'miss'); } }
+        else if (sName === '賢者の知恵') { t.curH = Math.min(t.maxH, t.curH + 5); showDamageNumber(t.id, 5, 'heal'); } 
+        else if (sName === '鱗粉') targets.forEach(e => { if(e.curH>0) e.poison = true; });
+        else if (sName === '咆哮') targets.forEach(e => { if(e.curH>0) { if (e.invincible<=0) { e.curH = Math.max(0, e.curH - 8); showDamageNumber(e.id, 8, 'normal'); checkAndRevivePhoenix(e); } else { showDamageNumber(e.id, 0, 'miss'); } } });
         else if (sName === '身代わり') { u.guard = true; } else if (sName === '転生') { t.curH = t.maxH; }
         else if (sName === '毒牙' || sName === '猛毒') { t.poison = true; addLog(t.name + "を致命的な毒にした！"); }
-        else if (sName === '甘い蜜') { t.curH = Math.min(t.maxH, t.curH + 3); addLog(t.name + "が3回復！"); }
-        else if (sName === '丸呑み') { if(t.invincible<=0) { t.curH = Math.max(0, t.curH - 15); addLog(t.name + "に15の固定ダメージ！"); checkAndRevivePhoenix(t); } }
+        else if (sName === '甘い蜜') { t.curH = Math.min(t.maxH, t.curH + 3); showDamageNumber(t.id, 3, 'heal'); addLog(t.name + "が3回復！"); }
+        else if (sName === '丸呑み') { if(t.invincible<=0) { t.curH = Math.max(0, t.curH - 15); showDamageNumber(t.id, 15, 'normal'); addLog(t.name + "に15の固定ダメージ！"); checkAndRevivePhoenix(t); } else { showDamageNumber(t.id, 0, 'miss'); } }
         else if (sName === '輝炎ノ息') { 
          targets.forEach(e => { 
-             if(e.curH>0 && e.invincible<=0) { 
-                 e.curH = Math.max(0, e.curH - 60); 
-                 checkAndRevivePhoenix(e); 
+             if(e.curH>0) { 
+                 if (e.invincible<=0) { 
+                     e.curH = Math.max(0, e.curH - 60); 
+                     showDamageNumber(e.id, 60, 'normal');
+                     checkAndRevivePhoenix(e); 
+                 } else { showDamageNumber(e.id, 0, 'miss'); }
              } 
          }); 
          addLog("灼熱の輝炎！全体に60ダメージ！"); 
@@ -2475,10 +2482,10 @@ function executeAction(u, t, type, skillName = null) {
         else if (sName === '忘却の波動') {
             targets.forEach(e => {
                 if(e.curH > 0) {
-                    e.atkBuff = 0;       // 攻撃力バフ解除
-                    e.invincible = 0;    // 無敵（強固な甲羅など）解除
-                    e.evasionBuff = 0;   // 回避バフ解除
-                    e.guard = false;     // 身代わり状態解除
+                    e.atkBuff = 0;       
+                    e.invincible = 0;    
+                    e.evasionBuff = 0;   
+                    e.guard = false;     
                 }
             });
             addLog("忘却の波動！相手の強化状態をすべてかき消した！");
