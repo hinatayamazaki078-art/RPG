@@ -1905,35 +1905,13 @@ window.handleDragEnd = function(e) {
 };
 
 function updateShopUI() {
-    const char = box.find(b => b.id === shopTargetId); 
-    if(!char) return closeShop();
-    
-    let wpBonus = 0; 
-    if (char.weaponId) { 
-        const wp = weapons.find(w => w.id === char.weaponId); 
-        if (wp) wpBonus = getWeaponBonus(wp.name); 
-    }
+    const char = box.find(b => b.id === shopTargetId); if(!char) return closeShop();
+    let wpBonus = 0; if (char.weaponId) { const wp = weapons.find(w => w.id === char.weaponId); if (wp) wpBonus = getWeaponBonus(wp.name); }
     
     let skillText = (char.skills && char.skills.length > 0) ? char.skills.map(s => `【${s.name}】`).join(' ') : 'なし';
     const expText = char.lv >= 99 ? "MAX" : `${char.exp} / ${getUnitNextExp(char.lv)}`;
-
-    // HTMLを整理して、表示崩れを防ぎます
-    const detailHtml = `
-        <div style="text-align:center; margin-bottom:10px;">
-            <div style="font-size:${char.name.length >= 4 ? '35px' : '55px'}; line-height:1.2;">${char.name}</div>
-            <div style="font-size:20px; color:#ff0; margin-top:-5px;">Lv.${char.lv || 1}</div>
-        </div>
-        <div class="stats-text" style="color:#0ff; margin-bottom:5px; text-align:center;">EXP: ${expText}</div>
-        <div class="stats-text" style="border-top:1px solid #444; padding-top:5px;">
-            攻撃:${char.p}${wpBonus > 0 ? `(+${wpBonus})` : ''} 
-            HP:${char.h} 速さ:${char.s} MP:${char.m}
-        </div>
-        <div style="font-size:12px; margin-top:5px; color:#ff0; line-height:1.4;">技枠: ${char.skills.length}/${char.maxSkillSlots||1} ${skillText}</div>
-    `;
+    document.getElementById('shop-unit-detail').innerHTML = `<span class="kanji" style="font-size:${char.name.length >= 4 ? '35px' : '55px'};">${char.name} <span style="font-size:20px; color:#ff0;">Lv.${char.lv || 1}</span></span><div class="stats-text" style="color:#0ff; margin-bottom:2px;">EXP: ${expText}</div><div class="stats-text">攻撃:${char.p}${wpBonus > 0 ? `(+${wpBonus})` : ''} HP:${char.h} 速さ:${char.s} MP:${char.m}</div><div style="font-size:12px; margin-top:3px; color:#ff0;">技枠: ${char.skills.length}/${char.maxSkillSlots||1} ${skillText}</div>`;
     
-    document.getElementById('shop-unit-detail').innerHTML = detailHtml;
-    
-    // 以下、既存のボタン・スロット処理はそのまま
     const sCost = getSlotCost('skill', char.maxSkillSlots || 1);
     document.getElementById('btn-upgrade-skill-slot').innerHTML = sCost ? `技枠+1<span>(${sCost}枚)</span>` : "技枠 Max";
     document.getElementById('btn-upgrade-skill-slot').disabled = sCost === null;
@@ -1955,8 +1933,7 @@ function updateShopUI() {
         }
         slotsHtml += `<div class="current-aura-display" style="color:#555; margin:2px 0;">枠${i+1}: 未装着</div>`;
     }
-    auZone.innerHTML = slotsHtml;
-}
+
     slotsHtml += `<div style="font-size:11px; color:#0c0; font-weight:bold; margin-top:8px; margin-bottom:4px;">【習得済みのスキル一覧】(ドラッグで順序変更)</div>`;
     for(let i=0; i<(char.maxSkillSlots||1); i++) {
         const sk = (char.skills || [])[i];
