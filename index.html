@@ -419,7 +419,6 @@
 <div id="game-screen">
 
     <audio id="game-bgm" src="MusMus-BGM-157.mp3" loop></audio>
-<div id="player-profile" style="display: flex; ...">
     
     <div id="player-profile" style="display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #333; margin-bottom: 5px;">
         <div id="player-icon" style="margin-right: 5px; cursor: pointer; padding: 2px 5px; border: 1px dashed #555; border-radius: 4px;" onclick="openIconSelect()">👤</div>
@@ -2229,15 +2228,14 @@ function checkAndRevivePhoenix(u) {
 }
 
 function closeIntro() {
-    // イントロ画面（案内人）を消す
+    // 案内人画面を消す
     const intro = document.getElementById('intro-overlay');
     if (intro) intro.style.display = 'none';
 
-    // ★ここでBGMを再生する命令を追加！★
+    // ★BGMを再生する（これがないと鳴りません）
     if (gameBgm) {
         gameBgm.play().catch(error => {
-            // ブラウザの制限で再生できない場合の保険
-            console.log("再生に失敗しました:", error);
+            console.log("再生失敗:", error);
         });
     }
 }
