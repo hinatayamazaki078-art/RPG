@@ -1767,6 +1767,11 @@ function playUltraGacha(times) {
                 
                 // リストへの結果追加
                 document.getElementById('gacha-result-list').innerHTML += `<div class="gacha-res-item" style="color:${textCol}; border-color:${borderCol}"><span class="rarity">${getRarityStarsHTML(base.r)}</span><span>${base.name}</span></div>`;
+                
+                // ▼ この2行を追加します ▼
+                currentPull++; 
+                saveData();
+                
                 setTimeout(pullNextUltra, 200);
             }
         }, 40);
