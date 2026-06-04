@@ -2415,8 +2415,12 @@ function executeAction(u, t, type, skillName = null) {
             return next(); 
         }
         
-        let dmg = u.p; if (isGlobalDomination) dmg = Math.ceil(dmg / 2); if (u.atkBuff > 0) dmg *= 2;
-        let isCrit = false; 
+        // 武器の攻撃力を加算し、バフを倍率として計算（0.5なら1.5倍）
+const weaponP = u.weaponId ? (weaponData.find(w => w.id === u.weaponId)?.p || 0) : 0;
+let dmg = Math.floor((u.p + weaponP) * (1 + (u.atkBuff || 0))); 
+
+if (isGlobalDomination) dmg = Math.ceil(dmg / 2);
+let isCrit = false; 
         if (u.auras) {
             const critAu = u.auras.find(a => a.type === '会心');
             if (critAu && Math.random() * 100 < critAu.value) { dmg *= 2; isCrit = true; }
@@ -2470,7 +2474,29 @@ function executeAction(u, t, type, skillName = null) {
         else if (sName === '炎のブレス') { targets.forEach(e => { if(e.curH>0) { if(e.invincible<=0) { e.curH = Math.max(0, e.curH - 20); showDamageNumber(e.id, 20, 'normal'); checkAndRevivePhoenix(e); } else { showDamageNumber(e.id, 0, 'miss'); } } }); addLog("全体に20ダメージ！"); }
         else if (sName === '達磨さんが転んだ') { darumaTrigger = u.isP; addLog("達磨がこちらを凝視している...（罠発動）"); }
         else if (sName === '神の審判') { if(t.invincible<=0) { const judgeDmg = Math.random() < 0.5 ? 10 : 60; t.curH = Math.max(0, t.curH - judgeDmg); showDamageNumber(t.id, judgeDmg, 'normal'); addLog(`${t.name}に ${judgeDmg} の審判ダメージ！`); checkAndRevivePhoenix(t); } else { showDamageNumber(t.id, 0, 'miss'); } }
-        else if (sName === '連撃') { if(t.invincible<=0) { let d1 = u.p; t.curH = Math.max(0, t.curH - d1); showDamageNumber(t.id, d1, 'normal'); checkAndRevivePhoenix(t); let d2 = u.p; t.curH = Math.max(0, t.curH - d2); setTimeout(()=>showDamageNumber(t.id, d2, 'normal'), 200); checkAndRevivePhoenix(t); u.lastDmg = d1 + d2; addLog(`連続斬撃！ ${t.name}に ${d1}、${d2} ダメージ！`); } else { showDamageNumber(t.id, 0, 'miss'); } }
+        else if (sName === '連撃') { 
+    if(t.invincible <= 0) { 
+        // 攻撃力を計算（通常攻撃と同じ計算式を適用）
+        const wP = u.weaponId ? (weaponData.find(w => w.id === u.weaponId)?.p || 0) : 0;
+        let baseDmg = Math.floor((u.p + wP) * (1 + (u.atkBuff || 0)));
+        
+        let d1 = baseDmg; 
+        t.curH = Math.max(0, t.curH - d1); 
+        showDamageNumber(t.id, d1, 'normal'); 
+        
+        let d2 = baseDmg; 
+        setTimeout(() => {
+            t.curH = Math.max(0, t.curH - d2);
+            showDamageNumber(t.id, d2, 'normal');
+            checkAndRevivePhoenix(t);
+        }, 200);
+        
+        u.lastDmg = d1 + d2; 
+        addLog(`連続斬撃！ ${t.name}に ${d1}、${d2} ダメージ！`); 
+    } else { 
+        showDamageNumber(t.id, 0, 'miss'); 
+    } 
+}
         else if (sName === 'マジ殴り') { if(t.invincible<=0) { t.curH = Math.max(0, t.curH - 200); showDamageNumber(t.id, 200, 'normal'); addLog(`必殺のマジ殴り！ ${t.name}に200ダメ！`); checkAndRevivePhoenix(t); } else { showDamageNumber(t.id, 0, 'miss'); } }
         else if (sName === 'イーター') { if(t.invincible<=0) { t.curH = Math.max(0, t.curH - 30); showDamageNumber(t.id, 30, 'normal'); u.curH = Math.min(u.maxH, u.curH + 30); showDamageNumber(u.id, 30, 'heal'); addLog(`魂を喰らう！ 30ダメ＆30回復！`); checkAndRevivePhoenix(t); } else { showDamageNumber(t.id, 0, 'miss'); } }
         else if (sName === '魅了') { 
@@ -2565,7 +2591,22 @@ function closeGugenkaModal() {
     function next() {
     updateUI();
     if (enemies.every(e => e.curH <= 0)) { 
-        party.forEach(p => { p.curH = p.maxH; p.curM = p.m; p.poison = false; p.charm = 0; p.guard = false; p.usedPhoenix = false; });
+        party.forEach(p => { 
+            p.curH = p.maxH; 
+            p.curM = p.m; 
+            p.poison = false; 
+            p.charm = 0; 
+            p.guard = false; 
+            p.usedPhoenix = false; 
+            // バフ・状態異常のリセットを追加
+            p.atkBuff = 0;
+            p.defBuff = 0;
+            p.evasionBuff = 0;
+            p.invincible = 0;
+            p.blind = 0;
+            p.paralyze = 0;
+            p.deathTrap = false;
+        });
         addLog("勝利！全員全回復した");
 
         gainPlayerExp(1);
