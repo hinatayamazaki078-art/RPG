@@ -2228,15 +2228,33 @@ function checkAndRevivePhoenix(u) {
 }
 
 function closeIntro() {
-    // 案内人画面を消す
+    // イントロ画面を隠す
     const intro = document.getElementById('intro-overlay');
     if (intro) intro.style.display = 'none';
 
-    // ★BGMを再生する（これがないと鳴りません）
+    // BGM再生の徹底対策
     if (gameBgm) {
-        gameBgm.play().catch(error => {
-            console.log("再生失敗:", error);
-        });
+        // 1. まず音量を設定（0になっていないか確認）
+        gameBgm.volume = 0.3;
+        
+        // 2. 再生位置をリセットして読み込み直す
+        gameBgm.currentTime = 0;
+        gameBgm.load();
+
+        // 3. ユーザーのクリック直後に再生を実行
+        const playPromise = gameBgm.play();
+
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                console.log("BGM再生成功！");
+            }).catch(error => {
+                console.log("自動再生がブロックされました。もう一度画面をタップしてください。");
+                // 失敗した場合は、画面全体のどこかを触った瞬間に鳴るように「予約」する
+                document.body.addEventListener('click', () => {
+                    gameBgm.play();
+                }, { once: true });
+            });
+        }
     }
 }
     
