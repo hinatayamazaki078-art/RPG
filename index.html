@@ -2416,8 +2416,7 @@ function executeAction(u, t, type, skillName = null) {
         }
         
         // 武器の攻撃力を加算し、バフを倍率として計算（0.5なら1.5倍）
-const weaponP = u.weaponId ? (weaponData.find(w => w.id === u.weaponId)?.p || 0) : 0;
-let dmg = Math.floor((u.p + weaponP) * (1 + (u.atkBuff || 0))); 
+let dmg = Math.floor(u.p * (1 + (u.atkBuff || 0))); 
 
 if (isGlobalDomination) dmg = Math.ceil(dmg / 2);
 let isCrit = false; 
@@ -2477,8 +2476,7 @@ let isCrit = false;
         else if (sName === '連撃') { 
     if(t.invincible <= 0) { 
         // 攻撃力を計算（通常攻撃と同じ計算式を適用）
-        const wP = u.weaponId ? (weaponData.find(w => w.id === u.weaponId)?.p || 0) : 0;
-        let baseDmg = Math.floor((u.p + wP) * (1 + (u.atkBuff || 0)));
+        let baseDmg = Math.floor(u.p * (1 + (u.atkBuff || 0)));
         
         let d1 = baseDmg; 
         t.curH = Math.max(0, t.curH - d1); 
