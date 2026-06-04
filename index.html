@@ -417,6 +417,9 @@
 <body>
 
 <div id="game-screen">
+
+    <audio id="game-bgm" src="MusMus-BGM-157.mp3" loop></audio>
+<div id="player-profile" style="display: flex; ..."> ```
     
     <div id="player-profile" style="display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #333; margin-bottom: 5px;">
         <div id="player-icon" style="margin-right: 5px; cursor: pointer; padding: 2px 5px; border: 1px dashed #555; border-radius: 4px;" onclick="openIconSelect()">👤</div>
@@ -721,6 +724,11 @@
 </div>
 
 <script>
+// --- BGMの準備 ---
+const gameBgm = document.getElementById('game-bgm');
+if (gameBgm) {
+    gameBgm.volume = 0.2; // 音量を20%に設定（うるさすぎないように）
+} 
 // ↓他の定数（const SKILL_DATA など）の近くにこれを追加してください
 const ICON_DATA = [
    { icon: '<img src="001.png" style="width:24px; height:24px; object-fit:contain; pointer-events:none;">', r: 1 },
@@ -2220,7 +2228,20 @@ function checkAndRevivePhoenix(u) {
     } return false;
 }
 
-function cycle() {
+function closeIntro() {
+    // イントロ画面を隠す（既にあるコード）
+    const intro = document.getElementById('intro-overlay');
+    if (intro) intro.style.display = 'none';
+
+    // ★ここでBGMを再生！★
+    if (gameBgm) {
+        gameBgm.play().catch(error => {
+            console.log("BGMの再生に失敗しました（操作が必要です）:", error);
+        });
+    }
+}
+    
+    function cycle() {
     const all = [...party, ...enemies];
     all.forEach(u => {
         if (u.name === '蛆' && u.curH <= 0 && all.some(p => p.name === '蝿' && p.curH > 0 && p.isP === u.isP)) { u.curH = 1; addLog(`${u.name}が再生した！`); }
