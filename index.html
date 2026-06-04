@@ -483,7 +483,7 @@
         <span>金: <span id="global-coin-count">0</span>枚 / 石: <span id="global-stone-count" style="color:#fff;">0</span>個</span>
         <div>
             <span id="header-stage-label">拠点</span>
-            <button id="btn-retreat" class="exit-btn" style="display:none; margin-left:10px;" onclick="location.reload()">拠点に戻る</button>
+            <button id="btn-retreat" class="exit-btn" style="display:none; margin-left:10px;" onclick="returnToHome()">拠点に戻る</button>
         </div>
     </div>
         <div id="view-inventory-sell" class="view">
@@ -732,6 +732,23 @@ document.body.addEventListener('click', function() {
         });
     }
 }, { once: true });
+
+    function returnToHome() {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-home').classList.add('active');
+    
+    // ボタンや案内人の非表示処理
+    const btnRetreat = document.getElementById('btn-retreat');
+    if (btnRetreat) btnRetreat.style.display = "none";
+    
+    const introOverlay = document.getElementById('intro-overlay');
+    if (introOverlay) introOverlay.style.display = "none";
+    
+    // ホーム画面のUI（表示）を最新にする
+    if (typeof updateHomeUI === 'function') {
+        updateHomeUI();
+    }
+}
 // ↓他の定数（const SKILL_DATA など）の近くにこれを追加してください
 const ICON_DATA = [
    { icon: '<img src="001.png" style="width:24px; height:24px; object-fit:contain; pointer-events:none;">', r: 1 },
@@ -2216,7 +2233,7 @@ function startDigBattle(tier) {
 function initBattle() {
     if (stage > currentEndStage) { 
         addLog(`★第 ${currentEndStage} 層 領域制覇！★`); if (stage - 1 > maxClearedStage) maxClearedStage = stage - 1; saveData(); 
-        if (maxClearedStage >= 300) addLog("★前人未到の完全踏破を成し遂げた！★"); setTimeout(() => location.reload(), 2500); return; 
+        if (maxClearedStage >= 300) addLog("★前人未到の完全踏破を成し遂げた！★"); setTimeout(() => returnToHome(), 2500); return; 
     }
     document.getElementById('header-stage-label').innerText = `第 ${stage} 層`;
     let enemyNames = stageBaseData[(stage-1) % stageBaseData.length];
@@ -2691,7 +2708,7 @@ function closeGugenkaModal() {
         else if (isShadowMode) {
             addLog(`他者の影との手合わせが終了した！`);
             saveData();
-            setTimeout(() => location.reload(), 2000);
+            setTimeout(() => returnToHome(), 2000);
         }
         else if (isBossMode) {
             addLog("強者を退けた！"); 
@@ -2700,18 +2717,18 @@ function closeGugenkaModal() {
                 box.push({...base, id: Math.random(), auraId: null, auraIds: [], weaponId: null, lv: 1, exp: 0});
                 addLog("★" + currentBossName + "が仲間に加わった！"); 
             }
-            saveData(); setTimeout(()=>location.reload(), 1500);
+            saveData(); setTimeout(()=>returnToHome(), 1500);
         } else if (isDigMode) {
             const d = digDataList[currentDigTier]; weapons.push({ id: Math.random(), name: d.wp }); addLog(`秘宝発掘成功！⚔️【${d.wp}】を獲得！`);
             if (Math.random() < d.stoneChance) { stones += d.stoneCount; addLog(`💎【強化石】を${d.stoneCount}個獲得！`); }
-            saveData(); setTimeout(() => location.reload(), 3000);
+            saveData(); setTimeout(() => returnToHome(), 3000);
         } else {
             let reward = 1; if (stage >= 31 && stage <= 50) reward = 4; else if (stage >= 51 && stage <= 100) reward = 5; else if (stage >= 101 && stage <= 200) reward = 8; else if (stage >= 201) reward = 12; else reward = Math.ceil(stage/10);
             coins += reward; document.getElementById('global-coin-count').innerText = coins; addLog(`報酬：コイン ${reward} 枚獲得！`);
             if (stage > maxClearedStage) maxClearedStage = stage; saveData(); stage++; setTimeout(initBattle, 800);
         } return; 
     }
-    if (party.every(p => p.curH <= 0)) { addLog("全滅..."); setTimeout(()=>location.reload(), 2000); return; }
+    if (party.every(p => p.curH <= 0)) { addLog("全滅..."); setTimeout(()=>returnToHome(), 2000); return; }
 
     remainingActions--;
     if (remainingActions > 0 && queue[qIdx] && queue[qIdx].curH > 0) { addLog("⚡ 連撃発動！（残り行動: " + remainingActions + "回）"); turn(); } 
@@ -3291,11 +3308,11 @@ window.openShadowKing = async function() {
       });
       addLog(`【成功】あなたが新たな影の支配者となりました！`);
       saveData();
-      setTimeout(() => location.reload(), 3500);
+      setTimeout(() => returnToHome(), 3500);
     } catch (e) {
       console.error("玉座奪取エラー: ", e);
       addLog("通信エラー：玉座の記録に失敗しました...");
-      setTimeout(() => location.reload(), 3500);
+      setTimeout(() => returnToHome(), 3500);
     }
   };
     
