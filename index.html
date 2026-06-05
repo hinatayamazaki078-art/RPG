@@ -2563,9 +2563,16 @@ let isCrit = false;
 
         if (isCrit) addLog("💥" + u.name + "の会心の一撃：" + dmg + "ダメ (MP+3)"); else addLog(u.name + "の攻撃：" + dmg + "ダメ (MP+3)");
         checkAndRevivePhoenix(t);
-    } else {
-        const sName = skillName || u.skill;
-        let costM = SKILL_DATA[sName] ? SKILL_DATA[sName].cost : 0;
+    } else { // ← ★ここが重要！通常攻撃（if）が終わり、ここからスキル（else）の処理になります
+        const sName = skillName || u.skill; // ← ★これも必要です！
+
+        let costM = 0;
+        if (SKILL_DATA[sName]) {
+            costM = SKILL_DATA[sName].cost;
+        } else {
+            const sk = u.skillsList && u.skillsList.find(s => s.name === sName);
+            costM = sk ? (sk.cost || 0) : (u.cost || 0);
+        }
         if (sName === '捨て身') u.curH -= 5; else if (sName === '精霊の歌') u.curH -= Math.max(1, Math.floor(u.curH / 2)); else u.curM -= costM;
         
         addLog(u.name + "：【" + sName + "】"); const targets = u.isP ? enemies : party; const allies = u.isP ? party : enemies;
