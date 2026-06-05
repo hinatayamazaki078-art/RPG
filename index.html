@@ -2350,9 +2350,12 @@ function startDigBattle(tier) {
 }
 
 // targetElement は、攻撃対象の敵の画像タグ(<img>)や、敵を囲っている<div>タグを指定します
-function playAttackEffect(targetElement) {
+function playAttackEffect(targetElement, effectFile) {
     const container = document.getElementById('attack-effect-container');
     const video = document.getElementById('attack-effect-video');
+
+    // ★ここを追加：動画ファイルを切り替える（指定がなければデフォルトの ef1.mp4）
+    video.src = effectFile || "ef1.mp4";
 
     // ターゲットの現在の画面上の位置とサイズを取得する
     if (targetElement) {
