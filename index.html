@@ -2952,6 +2952,35 @@ function applyGiftCode() {
 
         alert("🎁 コード認証成功！\n【雷鰻】が仲間に加わりました！");
         input.value = ""; // 入力欄をクリア
+
+        } else if (code === 'KOTA') {
+        // 付与するアバターの画像タグ（元のゲームの仕様に合わせて文字列で定義）
+        const rewardAvatar = '<img src="200.png">';
+
+        // すでに所持しているかどうかの重複チェック（ownedIcons配列を調べる）
+        if (ownedIcons.includes(rewardAvatar)) {
+            alert("このギフトコードは既に使用済みか、すでにアバターを所持しています！");
+            return;
+        }
+
+        // 所持アイコンリスト（配列）に追加
+        ownedIcons.push(rewardAvatar);
+        
+        // 【任意】せっかくなので、受け取った瞬間にそのアバターを自動で即座に装備させる処理
+        playerIcon = rewardAvatar;
+        const playerIconEl = document.getElementById('player-icon');
+        if (playerIconEl) {
+            playerIconEl.innerHTML = playerIcon;
+        }
+
+        // セーブデータに保存して次回以降も消えないようにする
+        if (typeof saveData === 'function') saveData();
+        
+        // 着せ替え画面などのUIがあれば更新
+        if (typeof renderAvatarSelection === 'function') renderAvatarSelection();
+
+        alert("🎁 コード認証成功！\n限定アバターを獲得・装備しました！");
+        input.value = "";
     } else if (code === "") {
         alert("コードを入力してください。");
     } else {
