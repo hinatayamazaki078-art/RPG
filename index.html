@@ -2670,18 +2670,20 @@ let isCrit = false;
         addLog(u.name + "：【" + sName + "】"); const targets = u.isP ? enemies : party; const allies = u.isP ? party : enemies;
         
         if (sName === '回復') { let heal = Math.floor(t.maxH*0.3); t.curH = Math.min(t.maxH, t.curH + heal); showDamageNumber(t.id, heal, 'heal'); addLog(t.name + "が30%回復！");
-                            playAttackEffect(document.getElementById(`unit-box-${t.id}`), "heal.mp4");}
+                            playAttackEffect(document.getElementById(`unit-box-${t.id}`), "tktk_Recovery_17.gif"); }
         else if (sName === '閃光') { t.blind = 1; addLog(t.name + "の命中率が低下！"); }
         else if (sName === '斬撃') { if(t.invincible>0) { showDamageNumber(t.id, 0, 'miss'); addLog("無効！"); } else { t.curH = Math.max(0, t.curH - 5); showDamageNumber(t.id, 5, 'normal'); checkAndRevivePhoenix(t); addLog(t.name+"に5ダメ！");} }
         else if (sName === 'ムチ') { targets.forEach(e => { if(e.curH>0) { if(e.invincible>0){ showDamageNumber(e.id, 0, 'miss'); return; } e.curH = Math.max(0, e.curH - 2); showDamageNumber(e.id, 2, 'normal'); checkAndRevivePhoenix(e); }}); addLog("全体に2ダメ！");}
-        else if (sName === '大回復') { let heal = Math.floor(t.maxH*0.6); t.curH = Math.min(t.maxH, t.curH + heal); showDamageNumber(t.id, heal, 'heal'); addLog(t.name + "が60%回復！"); }
+        else if (sName === '大回復') { let heal = Math.floor(t.maxH*0.6); t.curH = Math.min(t.maxH, t.curH + heal); showDamageNumber(t.id, heal, 'heal'); addLog(t.name + "が60%回復！");
+                                  playAttackEffect(document.getElementById(`unit-box-${t.id}`), "tktk_Recovery_17.gif"); }
         else if (sName === '麻痺') { if (Math.random() < 0.3) { t.paralyze = 1; addLog(t.name+"は麻痺した！"); } else addLog("効かなかった..."); }
         else if (sName === '捨て身') { if(t.invincible>0) { showDamageNumber(t.id, 0, 'miss'); addLog("無効！"); } else { t.curH = Math.max(0, t.curH - 10); showDamageNumber(t.id, 10, 'normal'); checkAndRevivePhoenix(t); addLog(t.name+"に10ダメ！");} }
         else if (sName === '応援') { t.atkBuff = 1; addLog(t.name+"の攻撃力が倍化！"); }
         else if (sName === '攻撃増幅薬') { allies.forEach(a => { if(a.curH>0) a.atkBuff = 1; }); addLog("味方全員の攻撃力が倍化！"); }
         else if (sName === 'ブリザード') { targets.forEach(e => { if(e.curH>0) { if(e.invincible<=0) {e.curH = Math.max(0, e.curH - 10); showDamageNumber(e.id, 10, 'normal'); checkAndRevivePhoenix(e);} else { showDamageNumber(e.id, 0, 'miss'); } e.s -= 2; }}); addLog("全体に10ダメ＆素早さ低下！"); }
         else if (sName === '支配') { isGlobalDomination = true; addLog("支配空間展開！全員の攻撃力が半減！"); }
-        else if (sName === '妖精の粉') { allies.forEach(a => { if(a.curH>0) { let heal = Math.floor(a.maxH*0.8); a.curH = Math.min(a.maxH, a.curH + heal); showDamageNumber(a.id, heal, 'heal'); } }); addLog("味方全員が80%回復！"); }
+        else if (sName === '妖精の粉') { allies.forEach(a => { if(a.curH>0) { let heal = Math.floor(a.maxH*0.8); a.curH = Math.min(a.maxH, a.curH + heal); showDamageNumber(a.id, heal, 'heal'); } }); addLog("味方全員が80%回復！");
+                                   playAttackEffect(document.getElementById(`unit-box-${t.id}`), "tktk_Recovery_17.gif"); }
         else if (sName === 'メテオ') { if(t.invincible>0) { showDamageNumber(t.id, 0, 'miss'); addLog("無効！"); } else { t.curH = Math.max(0, t.curH - 35); showDamageNumber(t.id, 35, 'normal'); checkAndRevivePhoenix(t); addLog(t.name+"に35ダメ！");} }
         else if (sName === 'デストラップ') { t.deathTrap = true; addLog(t.name+"に死の罠を仕掛けた！"); }
         else if (sName === 'フェニックス') { t.curH = t.maxH; t.usedPhoenix = false; addLog(t.name+"が完全復活！"); }
