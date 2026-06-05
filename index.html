@@ -2096,7 +2096,35 @@ window.handleDragEnd = function(e) {
     }
 }
 
-function unequipAuraAtIndex(idx) {
+// スキルエフェクトを表示する関数
+function playSkillEffect(type = 'all') {
+    const container = document.getElementById('attack-effect-container');
+    const video = document.getElementById('attack-effect-video');
+    if (!container || !video) return;
+
+    // 敵の陣地全体（enemy-area）の位置を取得
+    const enemyArea = document.querySelector('.unit-area:last-of-type');
+    const rect = enemyArea.getBoundingClientRect();
+
+    // コンテナの位置を敵陣地の中央に合わせる
+    container.style.display = 'block';
+    container.style.left = (rect.left + rect.width / 2) + 'px';
+    container.style.top = (rect.top + rect.height / 2) + 'px';
+
+    // ビデオのサイズを調整（敵陣地全体を覆うように）
+    video.style.width = rect.width + 'px';
+    video.style.height = 'auto';
+
+    video.currentTime = 0;
+    video.play();
+
+    // 再生が終わったら隠す
+    video.onended = () => {
+        container.style.display = 'none';
+    };
+}
+    
+    function unequipAuraAtIndex(idx) {
     const char = box.find(b => b.id === shopTargetId);
     if(char && char.auraIds) { char.auraIds.splice(idx, 1); saveData(); updateShopUI(); }
 }
@@ -2697,7 +2725,24 @@ let isCrit = false;
         else if (sName === '感電') { targets.forEach(e => { if(e.curH>0) { if(e.invincible<=0) { e.curH = Math.max(0, e.curH - 3); showDamageNumber(e.id, 3, 'normal'); checkAndRevivePhoenix(e); } else { showDamageNumber(e.id, 0, 'miss'); } } }); }
         else if (sName === '御廚子' || sName === '伏魔御廚子') { targets.forEach(e => { if(e.curH>0) { if(e.invincible<=0) { e.curH = Math.max(0, e.curH - 30); showDamageNumber(e.id, 30, 'normal'); checkAndRevivePhoenix(e); } else { showDamageNumber(e.id, 0, 'miss'); } } }); addLog("領域展開。全体に30の固定ダメージ！"); }
         else if (sName === '巨大触手') { targets.forEach(e => { if(e.curH>0) { if(e.invincible<=0) { e.curH = Math.max(0, e.curH - 10); showDamageNumber(e.id, 10, 'normal'); checkAndRevivePhoenix(e); } else { showDamageNumber(e.id, 0, 'miss'); } } }); addLog("全体に10ダメージ！"); }
-        else if (sName === '炎のブレス') { targets.forEach(e => { if(e.curH>0) { if(e.invincible<=0) { e.curH = Math.max(0, e.curH - 20); showDamageNumber(e.id, 20, 'normal'); checkAndRevivePhoenix(e); } else { showDamageNumber(e.id, 0, 'miss'); } } }); addLog("全体に20ダメージ！"); }
+        else if (sName === '炎のブレス') { playSkillEffect('all'); 
+    
+    // エフェクトを見せるために少し待機させてからダメージを表示（お好みで）
+    await new Promise(r => setTimeout(r, 300));
+
+    targets.forEach(e => {
+        if(e.curH>0) {
+            if(e.invincible<=0) {
+                e.curH = Math.max(0, e.curH - 20);
+                showDamageNumber(e.id, 20, 'normal');
+                checkAndRevivePhoenix(e);
+            } else {
+                showDamageNumber(e.id, 0, 'miss');
+            }
+        }
+    });
+    addLog("火竜の猛火！全体に20ダメージ！");
+}
         else if (sName === '達磨さんが転んだ') { darumaTrigger = u.isP; addLog("達磨がこちらを凝視している...（罠発動）"); }
         else if (sName === '神の審判') { if(t.invincible<=0) { const judgeDmg = Math.random() < 0.5 ? 10 : 60; t.curH = Math.max(0, t.curH - judgeDmg); showDamageNumber(t.id, judgeDmg, 'normal'); addLog(`${t.name}に ${judgeDmg} の審判ダメージ！`); checkAndRevivePhoenix(t); } else { showDamageNumber(t.id, 0, 'miss'); } }
         else if (sName === '連撃') { 
