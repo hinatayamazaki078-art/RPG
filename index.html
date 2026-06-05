@@ -2069,9 +2069,21 @@ window.handleDragEnd = function(e) {
 
     const wpZone = document.getElementById('weapon-upgrade-zone');
     if (char.weaponId && weapons.find(w => w.id === char.weaponId)) {
-        const wp = weapons.find(w => w.id === char.weaponId); const upInfo = getNextUpgradeInfo(wp.name);
-        if (upInfo && upInfo.nextName) wpZone.innerHTML = `<div style="color:#fff; font-weight:bold;">【武器強化の試練】</div><div style="margin-top:2px;">現在の装備: <span style="color:#0ff;">${wp.name}</span></div><div style="margin-top:2px; color:#ff0;">次の段階: <span style="color:#fff; font-weight:bold;">${upInfo.nextName}</span></div><div style="color:#ff5555; font-size:10px; margin-top:1px;">成功確率: ${upInfo.rate}% / 必要石: 3個 (所持: ${stones}個)</div><button class="w-upgrade-btn" ${stones < 3 ? 'disabled' : ''} onclick="executeWeaponUpgrade(${wp.id})">強化の試練を実行する</button>`;
-        else wpZone.innerHTML = `<div style="color:#fff; font-weight:bold;">【武器強化の試練】</div><div style="margin-top:2px; color:#ff0;">現在の装備: <span style="color:#f0f; font-weight:bold;">${wp.name}</span></div><div style="color:#0ff; font-size:10px; margin-top:2px; text-align:center;">限界突破済または特殊武器です</div>`;
+        const wp = weapons.find(w => w.id === char.weaponId); 
+        const upInfo = getNextUpgradeInfo(wp.name);
+        if (upInfo && upInfo.nextName) {
+            // ▼追加：現在の確率を計算して表示する
+            let fCount = wp.failCount || 0;
+            let currentRate = upInfo.rate * Math.pow(1.1, fCount);
+            if (currentRate > 100) currentRate = 100;
+            let rateStr = currentRate.toFixed(1); // 小数点第一位まで表示
+            
+            let supportHtml = currentSupportItem ? `<div style="color:#0f0; font-size:10px; margin-top:2px;">補助: ${currentSupportItem.name} 適用中</div>` : "";
+
+            wpZone.innerHTML = `<div style="color:#fff; font-weight:bold;">【武器強化の試練】</div><div style="margin-top:2px;">現在の装備: <span style="color:#0ff;">${wp.name}</span></div><div style="margin-top:2px; color:#ff0;">次の段階: <span style="color:#fff; font-weight:bold;">${upInfo.nextName}</span></div><div style="color:#ff5555; font-size:10px; margin-top:1px;">成功確率: <span style="font-weight:bold; font-size:12px;">${rateStr}%</span> / 必要石: 3個 (所持: ${stones}個)</div>${supportHtml}<button class="w-upgrade-btn" ${stones < 3 ? 'disabled' : ''} onclick="executeWeaponUpgrade(${wp.id})">強化の試練を実行する</button>`;
+        } else {
+            wpZone.innerHTML = `<div style="color:#fff; font-weight:bold;">【武器強化の試練】</div><div style="margin-top:2px; color:#ff0;">現在の装備: <span style="color:#f0f; font-weight:bold;">${wp.name}</span></div><div style="color:#0ff; font-size:10px; margin-top:2px; text-align:center;">限界突破済または特殊武器です</div>`;
+        }
     } else wpZone.innerHTML = `<span style="color:#888;">【武器強化の試練】装具が装備されていません</span>`;
 
     const freeAuras = auras.filter(a => !box.some(b => (b.auraIds || []).includes(a.id)));
@@ -2102,8 +2114,30 @@ function forgetSkillAtIndex(idx) {
 
 function executeWeaponUpgrade(weaponId) {
     if (stones < 3) return alert("強化石が3個不足しています。");
-    const wp = weapons.find(w => w.id === weaponId); if (!wp) return; const upInfo = getNextUpgradeInfo(wp.name); if (!upInfo || !upInfo.nextName) return;
-    stones -= 3; if (Math.random() * 100 < upInfo.rate) { const oldName = wp.name; wp.name = upInfo.nextName; alert(`✨強化成功！✨\n【${oldName}】は【${wp.name}】へと鍛え上げられた！`); } else { alert(`❌強化失敗...❌`); }
+    const wp = weapons.find(w => w.id === weaponId); 
+    if (!wp) return; 
+    const upInfo = getNextUpgradeInfo(wp.name); 
+    if (!upInfo || !upInfo.nextName) return;
+
+    // ▼ 追加：失敗回数の初期化と確率の計算
+    if (wp.failCount === undefined) wp.failCount = 0;
+    
+    // 基本確率 × 1.1の失敗回数乗
+    let actualRate = upInfo.rate * Math.pow(1.1, wp.failCount);
+    if (actualRate > 100) actualRate = 100; // 100%を超えないようにする
+
+    stones -= 3; 
+
+    // 乱数と計算した確率を比較
+    if (Math.random() * 100 < actualRate) { 
+        const oldName = wp.name; 
+        wp.name = upInfo.nextName; 
+        wp.failCount = 0; // 成功したら失敗回数をリセット
+        alert(`✨強化成功！✨\n【${oldName}】は【${wp.name}】へと鍛え上げられた！`); 
+    } else { 
+        wp.failCount++; // 失敗したらカウントを増やす
+        alert(`❌強化失敗...❌\n（次回の成功確率がアップしました！）`); 
+    }
     saveData(); updateShopUI();
 }
 
