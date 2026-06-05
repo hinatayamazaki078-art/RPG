@@ -766,7 +766,7 @@
             <button onclick="playGamble()" style="padding:10px 20px; background:#400; color:#fff; border:1px solid #f00; cursor:pointer;">博打を打つ</button>
         </div>
         <br>
-        <button onclick="showView('home-view')" style="margin-top:30px;">拠点に戻る</button>
+        <button onclick="returnToHome()" style="margin-top:30px;">拠点に戻る</button>
     </div>
 </div>
 
@@ -1464,15 +1464,16 @@ function playGamble() {
     const msgEl = document.getElementById('guide-message');
 
     // 所持金チェック
-    if (playerData.coin < bet) {
-        msgEl.innerText = "「……金が足りないようだな。」";
+    if (coins < bet) {
+        msgEl.innerText = "『……金が足りないようだな。』";
         return;
     }
 
     // 支払い
-    playerData.coin -= bet;
+    coins -= bet;
     saveData();
-    document.getElementById('gambling-coin-display').innerText = `コイン: ${playerData.coin}`;
+    document.getElementById('gambling-coin-display').innerText = `コイン: ${coins}`;
+    updateHomeUI(); // 拠点側のコイン表示も同期しておく
 
     // 抽選 (0〜100の乱数)
     const rand = Math.random() * 100;
@@ -1480,36 +1481,32 @@ function playGamble() {
     let resultMsg = "";
 
     if (rand < 70) {
-        // 70% で 0倍
         multiplier = 0;
-        resultMsg = "「ククク……運がなかったな。没収だ。」";
+        resultMsg = "『ククク……運がなかったな。没収だ。』";
     } else if (rand < 88) {
-        // 18% (70+18) で 2倍
         multiplier = 2;
-        resultMsg = "「ほう、倍か。運が良いな。」";
+        resultMsg = "『ほう、倍か。運が良いな。』";
     } else if (rand < 96) {
-        // 8% (88+8) で 5倍
         multiplier = 5;
-        resultMsg = "「5倍か。やるではないか。」";
+        resultMsg = "『5倍か。やるではないか。』";
     } else if (rand < 99.5) {
-        // 3.5% (96+3.5) で 10倍
         multiplier = 10;
-        resultMsg = "「10倍だと！？貴様、何者だ……。」";
+        resultMsg = "『10倍だと！？貴様、何者だ……。』";
     } else {
-        // 0.5% で 30倍
         multiplier = 30;
-        resultMsg = "「30倍……！伝説の博徒がおったとはな……。」";
+        resultMsg = "『30倍……！伝説の博徒がおったとはな……。』";
     }
 
     const winAmount = bet * multiplier;
     if (winAmount > 0) {
-        playerData.coin += winAmount;
+        coins += winAmount;
         saveData();
+        updateHomeUI();
     }
 
     // 画面更新
     msgEl.innerHTML = `${resultMsg}<br><span style="color:#ff0; font-weight:bold;">${winAmount} コイン獲得</span>`;
-    document.getElementById('gambling-coin-display').innerText = `コイン: ${playerData.coin}`;
+    document.getElementById('gambling-coin-display').innerText = `コイン: ${coins}`;
 }
     
     function updateHomeUI() {
