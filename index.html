@@ -411,11 +411,28 @@
     30% { transform: translate(-50%, -80%) scale(1.8); }
     100% { opacity: 0; transform: translate(-50%, -150%) scale(1.2); }
 }
+
+        #attack-effect-container {
+        display: none;
+        position: fixed; 
+        transform: translate(-50%, -50%); 
+        z-index: 9999;
+        pointer-events: none;
+        mix-blend-mode: screen;
+    }
+
+    #attack-effect-video {
+        width: 200px; 
+        height: auto;
+    }
     
     </style>
 </head>
 <body>
 
+<div id="attack-effect-container">
+    <video id="attack-effect-video" src="ef1.mp4" muted playsinline></video>
+</div>    
 <div id="game-screen">
 
     <audio id="game-bgm" src="MusMus-BGM-157.mp3" loop></audio>
@@ -1937,7 +1954,20 @@ window.handleDragEnd = function(e) {
     dragSrcIdx = null;
 };
 
-function updateShopUI() {
+// ゲーム側の攻撃処理のイメージ
+function attack() {
+    // 1. ダメージ計算などの処理...
+    
+    // 2. 攻撃対象の敵の要素を取得（※idやclassはご自身のゲームに合わせてください）
+    const enemyEl = document.getElementById('current-enemy'); 
+
+    // 3. エフェクト関数に敵の要素を渡して呼び出す！
+    playAttackEffect(enemyEl);
+    
+    // 4. HPを減らしたりログを出したりする処理...
+}
+    
+    function updateShopUI() {
     const char = box.find(b => b.id === shopTargetId); if(!char) return closeShop();
     let wpBonus = 0; if (char.weaponId) { const wp = weapons.find(w => w.id === char.weaponId); if (wp) wpBonus = getWeaponBonus(wp.name); }
     
@@ -2230,7 +2260,40 @@ function startDigBattle(tier) {
     document.getElementById('log').innerText = ""; addLog(`--- 秘宝発掘：【${d.name}】に挑む！ ---`); cycle();
 }
 
-function initBattle() {
+// targetElement は、攻撃対象の敵の画像タグ(<img>)や、敵を囲っている<div>タグを指定します
+function playAttackEffect(targetElement) {
+    const container = document.getElementById('attack-effect-container');
+    const video = document.getElementById('attack-effect-video');
+
+    // ターゲットの現在の画面上の位置とサイズを取得する
+    if (targetElement) {
+        const rect = targetElement.getBoundingClientRect();
+        
+        // 敵の中心座標を計算
+        const centerX = rect.left + (rect.width / 2);
+        const centerY = rect.top + (rect.height / 2);
+
+        // エフェクトのコンテナを敵の中心に移動
+        container.style.left = centerX + 'px';
+        container.style.top = centerY + 'px';
+    } else {
+        // もしターゲットが見つからなかった場合の保険（画面中央にする）
+        container.style.left = '50%';
+        container.style.top = '50%';
+    }
+
+    // エフェクトを表示して動画を最初から再生
+    container.style.display = 'block';
+    video.currentTime = 0;
+    video.play();
+
+    // 再生が終わったら非表示にする
+    video.onended = function() {
+        container.style.display = 'none';
+    };
+}
+    
+    function initBattle() {
     if (stage > currentEndStage) { 
         addLog(`★第 ${currentEndStage} 層 領域制覇！★`); if (stage - 1 > maxClearedStage) maxClearedStage = stage - 1; saveData(); 
         if (maxClearedStage >= 300) addLog("★前人未到の完全踏破を成し遂げた！★"); setTimeout(() => returnToHome(), 2500); return; 
