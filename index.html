@@ -2669,7 +2669,8 @@ let isCrit = false;
         
         addLog(u.name + "：【" + sName + "】"); const targets = u.isP ? enemies : party; const allies = u.isP ? party : enemies;
         
-        if (sName === '回復') { let heal = Math.floor(t.maxH*0.3); t.curH = Math.min(t.maxH, t.curH + heal); showDamageNumber(t.id, heal, 'heal'); addLog(t.name + "が30%回復！"); }
+        if (sName === '回復') { let heal = Math.floor(t.maxH*0.3); t.curH = Math.min(t.maxH, t.curH + heal); showDamageNumber(t.id, heal, 'heal'); addLog(t.name + "が30%回復！");
+                            playAttackEffect(document.getElementById(`unit-box-${t.id}`), "heal.mp4");}
         else if (sName === '閃光') { t.blind = 1; addLog(t.name + "の命中率が低下！"); }
         else if (sName === '斬撃') { if(t.invincible>0) { showDamageNumber(t.id, 0, 'miss'); addLog("無効！"); } else { t.curH = Math.max(0, t.curH - 5); showDamageNumber(t.id, 5, 'normal'); checkAndRevivePhoenix(t); addLog(t.name+"に5ダメ！");} }
         else if (sName === 'ムチ') { targets.forEach(e => { if(e.curH>0) { if(e.invincible>0){ showDamageNumber(e.id, 0, 'miss'); return; } e.curH = Math.max(0, e.curH - 2); showDamageNumber(e.id, 2, 'normal'); checkAndRevivePhoenix(e); }}); addLog("全体に2ダメ！");}
