@@ -1953,19 +1953,6 @@ window.handleDragEnd = function(e) {
     e.target.style.opacity = '1';
     dragSrcIdx = null;
 };
-
-// ゲーム側の攻撃処理のイメージ
-function attack() {
-    // 1. ダメージ計算などの処理...
-    
-    // 2. 攻撃対象の敵の要素を取得（※idやclassはご自身のゲームに合わせてください）
-    const enemyEl = document.getElementById('current-enemy'); 
-
-    // 3. エフェクト関数に敵の要素を渡して呼び出す！
-    playAttackEffect(enemyEl);
-    
-    // 4. HPを減らしたりログを出したりする処理...
-}
     
     function updateShopUI() {
     const char = box.find(b => b.id === shopTargetId); if(!char) return closeShop();
@@ -2548,6 +2535,9 @@ let isCrit = false;
         }
         if (t.guard) dmg = 1;
         t.curH = Math.max(0, t.curH - dmg); u.lastDmg = dmg;
+
+        const targetEl = document.getElementById(`unit-box-${t.id}`);
+        playAttackEffect(targetEl);
         
         // ★追加：ここでダメージ数値を表示
         showDamageNumber(t.id, dmg, isCrit ? 'crit' : 'normal');
