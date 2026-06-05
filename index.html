@@ -436,6 +436,7 @@
 <div id="game-screen">
 
     <audio id="game-bgm" src="MusMus-BGM-157.mp3" loop></audio>
+    <audio id="se-attack" src="剣で斬る2.mp3" preload="auto"></audio>
     
     <div id="player-profile" style="display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #333; margin-bottom: 5px;">
         <div id="player-icon" style="margin-right: 5px; cursor: pointer; padding: 2px 5px; border: 1px dashed #555; border-radius: 4px;" onclick="openIconSelect()">👤</div>
@@ -2538,6 +2539,12 @@ let isCrit = false;
 
         const targetEl = document.getElementById(`unit-box-${t.id}`);
         playAttackEffect(targetEl);
+
+        const attackSound = document.getElementById('se-attack');
+        if (attackSound) {
+            attackSound.currentTime = 0;
+            attackSound.play().catch(e => console.log("サウンド再生エラー:", e));
+        }
         
         // ★追加：ここでダメージ数値を表示
         showDamageNumber(t.id, dmg, isCrit ? 'crit' : 'normal');
