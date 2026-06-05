@@ -740,6 +740,7 @@
 </div>
 
 <script>
+    const attackSE = new Audio('剣で斬る2.mp3');
 document.body.addEventListener('click', function() {
     const bgm = document.getElementById('game-bgm');
     if (bgm && bgm.paused) {
@@ -1366,7 +1367,12 @@ function executeInventorySell() {
     setTimeout(() => effect.remove(), 500);
 }
     
-function updateHomeUI() {
+function playAttackSound() {
+    attackSE.currentTime = 0; // 連続攻撃のために先頭に戻す
+    attackSE.play();
+}
+    
+    function updateHomeUI() {
     
     normalizeBoxData();
     document.getElementById('global-coin-count').innerText = coins;
@@ -2249,6 +2255,9 @@ function startDigBattle(tier) {
 
 // targetElement は、攻撃対象の敵の画像タグ(<img>)や、敵を囲っている<div>タグを指定します
 function playAttackEffect(targetElement) {
+    attackSE.currentTime = 0; // 連続再生のために再生位置を先頭に戻す
+    attackSE.play();
+}
     const container = document.getElementById('attack-effect-container');
     const video = document.getElementById('attack-effect-video');
 
