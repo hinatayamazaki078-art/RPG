@@ -746,6 +746,30 @@
         <div id="skill-select-controls" class="controls" style="margin-top:5px; grid-template-columns: repeat(2, 1fr); display:none; height:auto; min-height:55px; gap:4px;"></div>
     </div>
 
+    <div id="gambling-view" class="view">
+    <div class="global-info">
+        <span id="gambling-coin-display">コイン: 0</span>
+    </div>
+    <div style="text-align:center; padding:20px;">
+        <h2 style="color:#f00; border:none;">― 隠し博打場 ―</h2>
+        <div id="guide-message" style="margin:20px 0; min-height:50px; color:#ccc; font-style:italic;"></div>
+        
+        <div id="gambling-controls">
+            <p>賭け金を選択してください</p>
+            <select id="bet-amount" style="padding:5px; background:#222; color:#fff; border:1px solid #fff;">
+                <option value="100">100コイン</option>
+                <option value="300">300コイン</option>
+                <option value="500">500コイン</option>
+                <option value="1000">1000コイン</option>
+            </select>
+            <br><br>
+            <button onclick="playGamble()" style="padding:10px 20px; background:#400; color:#fff; border:1px solid #f00; cursor:pointer;">博打を打つ</button>
+        </div>
+        <br>
+        <button onclick="returnToHome()" style="margin-top:30px;">拠点に戻る</button>
+    </div>
+</div>
+
     <div id="support-item-modal" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box; padding: 20px;">
         <div style="background: #111; border: 2px solid #aa0; border-radius: 5px; width: 100%; max-width: 340px; padding: 15px;">
             <h3 style="margin-top: 0; text-align: center; color: #ff0;">補助アイテム一覧</h3>
@@ -1434,7 +1458,58 @@ function executeInventorySell() {
     setTimeout(() => effect.remove(), 500);
 }
     
-function updateHomeUI() {
+function playGamble() {
+    const betSelect = document.getElementById('bet-amount');
+    const bet = parseInt(betSelect.value);
+    const msgEl = document.getElementById('guide-message');
+
+    // 所持金チェック
+    if (coins < bet) {
+        msgEl.innerText = "『……金が足りないようだな。』";
+        return;
+    }
+
+    // 支払い
+    coins -= bet;
+    saveData();
+    document.getElementById('gambling-coin-display').innerText = `コイン: ${coins}`;
+    updateHomeUI(); // 拠点側のコイン表示も同期しておく
+
+    // 抽選 (0〜100の乱数)
+    const rand = Math.random() * 100;
+    let multiplier = 0;
+    let resultMsg = "";
+
+    if (rand < 70) {
+        multiplier = 0;
+        resultMsg = "『ククク……運がなかったな。没収だ。』";
+    } else if (rand < 88) {
+        multiplier = 2;
+        resultMsg = "『ほう、倍か。運が良いな。』";
+    } else if (rand < 96) {
+        multiplier = 5;
+        resultMsg = "『5倍か。やるではないか。』";
+    } else if (rand < 99.5) {
+        multiplier = 10;
+        resultMsg = "『10倍だと！？貴様、何者だ……。』";
+    } else {
+        multiplier = 30;
+        resultMsg = "『30倍……！伝説の博徒がおったとはな……。』";
+    }
+
+    const winAmount = bet * multiplier;
+    if (winAmount > 0) {
+        coins += winAmount;
+        saveData();
+        updateHomeUI();
+    }
+
+    // 画面更新
+    msgEl.innerHTML = `${resultMsg}<br><span style="color:#ff0; font-weight:bold;">${winAmount} コイン獲得</span>`;
+    document.getElementById('gambling-coin-display').innerText = `コイン: ${coins}`;
+}
+    
+    function updateHomeUI() {
     
     normalizeBoxData();
     document.getElementById('global-coin-count').innerText = coins;
@@ -3075,10 +3150,22 @@ function getRarityStarsHTML(rarityLevel) {
 
 // ギフトコード処理
 // ギフトコード処理（既存データから取得する修正版）
+// ▼ 既存の applyGiftCode 関数をまるごとこれに置き換えます ▼
 function applyGiftCode() {
     const input = document.getElementById('gift-code-input');
     const code = input.value.trim();
 
+    // 🌟 新しく追加した abis（博打場）の処理
+    if (code === 'abis') {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById('gambling-view').classList.add('active');
+        document.getElementById('gambling-coin-display').innerText = `コイン: ${coins}`;
+        document.getElementById('guide-message').innerText = "『よく此処がわかったな・・・。』";
+        input.value = "";
+        return;
+    }
+
+    // 🌟 以下、元々あった既存のギフトコード処理
     if (code === '4649') {
         // 重複受け取り防止チェック
         if (localStorage.getItem('gift_4649_claimed')) {
@@ -3086,8 +3173,6 @@ function applyGiftCode() {
             return;
         }
 
-        // 【修正】既存のマスターデータ配列から「雷鰻」を検索
-        // ※もしゲーム内のマスターデータ配列名が `charData` ではない場合（例: `charaList` や `kanjiData` など）、その変数名に書き換えてください。
         const masterChar = charData.find(c => c.name === "雷鰻");
         
         if (!masterChar) {
@@ -3095,56 +3180,41 @@ function applyGiftCode() {
             return;
         }
 
-        // 既存のデータをベースに、手持ち（box）用の個別データを作成
         const raiun = {
-            ...masterChar,                 // 元のステータス（P、H、M、S、スキル等）を丸ごとコピー
-            id: Date.now() + Math.random(), // 個体別のユニークIDを発行（既存システムと衝突させないため）
-            lv: 1,                         // 初期レベル
-            exp: 0,                        // 初期経験値
-            auraId: null,                  // オーラなし
-            weaponId: null                 // 装備なし
+            ...masterChar,
+            id: Date.now() + Math.random(),
+            lv: 1,
+            exp: 0,
+            auraId: null,
+            weaponId: null
         };
 
-        // 手持ち（box）に追加
         box.push(raiun);
-
-        // 使用済みフラグを保存
         localStorage.setItem('gift_4649_claimed', 'true');
 
-        // システムのセーブ関数を呼び出して保存
         if (typeof saveData === 'function') saveData();
-
-        // 画面の表示を更新
         if (typeof updateHomeUI === 'function') updateHomeUI();
         if (typeof renderBox === 'function') renderBox();
 
         alert("🎁 コード認証成功！\n【雷鰻】が仲間に加わりました！");
-        input.value = ""; // 入力欄をクリア
+        input.value = ""; 
 
-        } else if (code === 'KOTA') {
-        // 付与するアバターの画像タグ（元のゲームの仕様に合わせて文字列で定義）
+    } else if (code === 'KOTA') {
         const rewardAvatar = '<img src="200.png">';
 
-        // すでに所持しているかどうかの重複チェック（ownedIcons配列を調べる）
         if (ownedIcons.includes(rewardAvatar)) {
             alert("このギフトコードは既に使用済みか、すでにアバターを所持しています！");
             return;
         }
 
-        // 所持アイコンリスト（配列）に追加
         ownedIcons.push(rewardAvatar);
-        
-        // 【任意】せっかくなので、受け取った瞬間にそのアバターを自動で即座に装備させる処理
         playerIcon = rewardAvatar;
         const playerIconEl = document.getElementById('player-icon');
         if (playerIconEl) {
             playerIconEl.innerHTML = playerIcon;
         }
 
-        // セーブデータに保存して次回以降も消えないようにする
         if (typeof saveData === 'function') saveData();
-        
-        // 着せ替え画面などのUIがあれば更新
         if (typeof renderAvatarSelection === 'function') renderAvatarSelection();
 
         alert("🎁 コード認証成功！\n限定アバターを獲得・装備しました！");
