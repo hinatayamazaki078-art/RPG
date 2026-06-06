@@ -2007,7 +2007,15 @@ function closeManual() { document.getElementById('view-manual').classList.remove
 function openStageSelection() {
     if (selectedIds.length === 0) return alert("メンバーを選んでください");
     document.getElementById('view-home').classList.remove('active'); document.getElementById('view-stage-select').classList.add('active');
-    const stagesDef = [ { start: 1, end: 50, req: 0, label: "黎明の領域 (第 1～50 層)" }, { start: 51, end: 100, req: 50, label: "深層の領域 (第 51～100 層)" }, { start: 101, end: 200, req: 100, label: "狂気の領域 (第 101～200 層)" }, { start: 201, end: 300, req: 200, label: "虚無の領域 (第 201～300 層)" } ];
+    const stagesDef = [ 
+        { start: 1, end: 50, req: 0, label: "黎明の領域 (第 1～50 層)" }, 
+        { start: 51, end: 100, req: 50, label: "深層の領域 (第 51～100 層)" }, 
+        { start: 101, end: 200, req: 100, label: "狂気の領域 (第 101～200 層)" }, 
+        { start: 201, end: 300, req: 200, label: "虚無の領域 (第 201～300 層)" },
+        { start: 301, end: 400, req: 300, label: "神域の領域 (第 301～400 層)" },
+        { start: 401, end: 500, req: 400, label: "終焉の領域 (第 401～500 層)" },
+        { start: 501, end: 10000, req: 500, label: "無限の領域 (第 501 層～∞)" } 
+    ];
     document.getElementById('stage-select-list').innerHTML = stagesDef.map(st => {
         if (maxClearedStage < st.req) return `<button class="stage-select-btn locked" disabled>${st.label}<span class="lock-text">🔒 要:${st.req}層クリア</span></button>`;
         else return `<button class="stage-select-btn" onclick="selectStageRange(${st.start}, ${st.end})">${st.label}${maxClearedStage >= st.end ? '<span class="clear-text">★ 制覇済</span>' : '<span class="clear-text" style="color:#ff0;">▶ 挑戦可能</span>'}</button>`;
@@ -2465,45 +2473,32 @@ function playAttackEffect(targetElement) {
     document.getElementById('header-stage-label').innerText = `第 ${stage} 層`;
     let enemyNames = stageBaseData[(stage-1) % stageBaseData.length];
     let buff = Math.floor(stage / 4);
-    enemies = setupBattleData(enemyNames.map((n, i) => { const base = charData.find(c => c.name === n) || charData[0]; return {...base, id: 900+i, h: base.h+buff*5, p: base.p+buff}; }), false);
-    document.getElementById('log').innerText = ""; addLog(`--- 第 ${stage} 層 ---`); cycle();
-}
-
-function checkAndRevivePhoenix(u) {
-    if (u.curH <= 0 && (u.name === '不死鳥' || (u.skillsList && u.skillsList.some(s=>s.name==='不死の再生'))) && !u.usedPhoenix) {
-        u.curH = u.maxH; u.curM = u.maxM; u.usedPhoenix = true; addLog(`✨【不死の再生】${u.name}は炎を纏い完全復活した！`); return true;
-    } return false;
-}
-
-function closeIntro() {
-    // イントロ画面を隠す
-    const intro = document.getElementById('intro-overlay');
-    if (intro) intro.style.display = 'none';
-
-    // BGM再生の徹底対策
-    if (gameBgm) {
-        // 1. まず音量を設定（0になっていないか確認）
-        gameBgm.volume = 0.3;
+    
+    enemies = setupBattleData(enemyNames.map((n, i) => { 
+        const base = charData.find(c => c.name === n) || charData[0]; 
         
-        // 2. 再生位置をリセットして読み込み直す
-        gameBgm.currentTime = 0;
-        gameBgm.load();
-
-        // 3. ユーザーのクリック直後に再生を実行
-        const playPromise = gameBgm.play();
-
-        if (playPromise !== undefined) {
-            playPromise.then(() => {
-                console.log("BGM再生成功！");
-            }).catch(error => {
-                console.log("自動再生がブロックされました。もう一度画面をタップしてください。");
-                // 失敗した場合は、画面全体のどこかを触った瞬間に鳴るように「予約」する
-                document.body.addEventListener('click', () => {
-                    gameBgm.play();
-                }, { once: true });
-            });
+        // --- 301層以降の敵のステータス倍率（インフレ補正） ---
+        let multi = 1;
+        if (stage > 500) {
+            // 500層以降は10階層ごとにさらに5%ずつ乗算で強くなる（無限インフレ）
+            multi = Math.pow(1.05, Math.floor((stage - 500) / 10)) * 4; 
+        } else if (stage > 400) {
+            multi = 3; // 401〜500層は一律3倍
+        } else if (stage > 300) {
+            multi = 2; // 301〜400層は一律2倍
         }
-    }
+        
+        return {
+            ...base, 
+            id: 900+i, 
+            h: Math.floor((base.h + buff * 5) * multi), 
+            p: Math.floor((base.p + buff) * multi)
+        }; 
+    }), false);
+    
+    document.getElementById('log').innerText = ""; 
+    addLog(`--- 第 ${stage} 層 ---`); 
+    cycle();
 }
     
     function cycle() {
