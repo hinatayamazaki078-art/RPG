@@ -746,30 +746,6 @@
         <div id="skill-select-controls" class="controls" style="margin-top:5px; grid-template-columns: repeat(2, 1fr); display:none; height:auto; min-height:55px; gap:4px;"></div>
     </div>
 
-    <div id="gambling-view" class="view">
-    <div class="global-info">
-        <span id="gambling-coin-display">コイン: 0</span>
-    </div>
-    <div style="text-align:center; padding:20px;">
-        <h2 style="color:#f00; border:none;">― 隠し博打場 ―</h2>
-        <div id="guide-message" style="margin:20px 0; min-height:50px; color:#ccc; font-style:italic;"></div>
-        
-        <div id="gambling-controls">
-            <p>賭け金を選択してください</p>
-            <select id="bet-amount" style="padding:5px; background:#222; color:#fff; border:1px solid #fff;">
-                <option value="100">100コイン</option>
-                <option value="300">300コイン</option>
-                <option value="500">500コイン</option>
-                <option value="1000">1000コイン</option>
-            </select>
-            <br><br>
-            <button onclick="playGamble()" style="padding:10px 20px; background:#400; color:#fff; border:1px solid #f00; cursor:pointer;">博打を打つ</button>
-        </div>
-        <br>
-        <button onclick="returnToHome()" style="margin-top:30px;">拠点に戻る</button>
-    </div>
-</div>
-
     <div id="support-item-modal" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box; padding: 20px;">
         <div style="background: #111; border: 2px solid #aa0; border-radius: 5px; width: 100%; max-width: 340px; padding: 15px;">
             <h3 style="margin-top: 0; text-align: center; color: #ff0;">補助アイテム一覧</h3>
@@ -1458,58 +1434,7 @@ function executeInventorySell() {
     setTimeout(() => effect.remove(), 500);
 }
     
-function playGamble() {
-    const betSelect = document.getElementById('bet-amount');
-    const bet = parseInt(betSelect.value);
-    const msgEl = document.getElementById('guide-message');
-
-    // 所持金チェック
-    if (coins < bet) {
-        msgEl.innerText = "『……金が足りないようだな。』";
-        return;
-    }
-
-    // 支払い
-    coins -= bet;
-    saveData();
-    document.getElementById('gambling-coin-display').innerText = `コイン: ${coins}`;
-    updateHomeUI(); // 拠点側のコイン表示も同期しておく
-
-    // 抽選 (0〜100の乱数)
-    const rand = Math.random() * 100;
-    let multiplier = 0;
-    let resultMsg = "";
-
-    if (rand < 70) {
-        multiplier = 0;
-        resultMsg = "『ククク……運がなかったな。没収だ。』";
-    } else if (rand < 88) {
-        multiplier = 2;
-        resultMsg = "『ほう、倍か。運が良いな。』";
-    } else if (rand < 96) {
-        multiplier = 5;
-        resultMsg = "『5倍か。やるではないか。』";
-    } else if (rand < 99.5) {
-        multiplier = 10;
-        resultMsg = "『10倍だと！？貴様、何者だ……。』";
-    } else {
-        multiplier = 30;
-        resultMsg = "『30倍……！伝説の博徒がおったとはな……。』";
-    }
-
-    const winAmount = bet * multiplier;
-    if (winAmount > 0) {
-        coins += winAmount;
-        saveData();
-        updateHomeUI();
-    }
-
-    // 画面更新
-    msgEl.innerHTML = `${resultMsg}<br><span style="color:#ff0; font-weight:bold;">${winAmount} コイン獲得</span>`;
-    document.getElementById('gambling-coin-display').innerText = `コイン: ${coins}`;
-}
-    
-    function updateHomeUI() {
+function updateHomeUI() {
     
     normalizeBoxData();
     document.getElementById('global-coin-count').innerText = coins;
@@ -2007,15 +1932,7 @@ function closeManual() { document.getElementById('view-manual').classList.remove
 function openStageSelection() {
     if (selectedIds.length === 0) return alert("メンバーを選んでください");
     document.getElementById('view-home').classList.remove('active'); document.getElementById('view-stage-select').classList.add('active');
-    const stagesDef = [ 
-        { start: 1, end: 50, req: 0, label: "黎明の領域 (第 1～50 層)" }, 
-        { start: 51, end: 100, req: 50, label: "深層の領域 (第 51～100 層)" }, 
-        { start: 101, end: 200, req: 100, label: "狂気の領域 (第 101～200 層)" }, 
-        { start: 201, end: 300, req: 200, label: "虚無の領域 (第 201～300 層)" },
-        { start: 301, end: 400, req: 300, label: "神域の領域 (第 301～400 層)" },
-        { start: 401, end: 500, req: 400, label: "終焉の領域 (第 401～500 層)" },
-        { start: 501, end: 10000, req: 500, label: "無限の領域 (第 501 層～∞)" } 
-    ];
+    const stagesDef = [ { start: 1, end: 50, req: 0, label: "黎明の領域 (第 1～50 層)" }, { start: 51, end: 100, req: 50, label: "深層の領域 (第 51～100 層)" }, { start: 101, end: 200, req: 100, label: "狂気の領域 (第 101～200 層)" }, { start: 201, end: 300, req: 200, label: "虚無の領域 (第 201～300 層)" } ];
     document.getElementById('stage-select-list').innerHTML = stagesDef.map(st => {
         if (maxClearedStage < st.req) return `<button class="stage-select-btn locked" disabled>${st.label}<span class="lock-text">🔒 要:${st.req}層クリア</span></button>`;
         else return `<button class="stage-select-btn" onclick="selectStageRange(${st.start}, ${st.end})">${st.label}${maxClearedStage >= st.end ? '<span class="clear-text">★ 制覇済</span>' : '<span class="clear-text" style="color:#ff0;">▶ 挑戦可能</span>'}</button>`;
@@ -2473,32 +2390,45 @@ function playAttackEffect(targetElement) {
     document.getElementById('header-stage-label').innerText = `第 ${stage} 層`;
     let enemyNames = stageBaseData[(stage-1) % stageBaseData.length];
     let buff = Math.floor(stage / 4);
-    
-    enemies = setupBattleData(enemyNames.map((n, i) => { 
-        const base = charData.find(c => c.name === n) || charData[0]; 
+    enemies = setupBattleData(enemyNames.map((n, i) => { const base = charData.find(c => c.name === n) || charData[0]; return {...base, id: 900+i, h: base.h+buff*5, p: base.p+buff}; }), false);
+    document.getElementById('log').innerText = ""; addLog(`--- 第 ${stage} 層 ---`); cycle();
+}
+
+function checkAndRevivePhoenix(u) {
+    if (u.curH <= 0 && (u.name === '不死鳥' || (u.skillsList && u.skillsList.some(s=>s.name==='不死の再生'))) && !u.usedPhoenix) {
+        u.curH = u.maxH; u.curM = u.maxM; u.usedPhoenix = true; addLog(`✨【不死の再生】${u.name}は炎を纏い完全復活した！`); return true;
+    } return false;
+}
+
+function closeIntro() {
+    // イントロ画面を隠す
+    const intro = document.getElementById('intro-overlay');
+    if (intro) intro.style.display = 'none';
+
+    // BGM再生の徹底対策
+    if (gameBgm) {
+        // 1. まず音量を設定（0になっていないか確認）
+        gameBgm.volume = 0.3;
         
-        // --- 301層以降の敵のステータス倍率（インフレ補正） ---
-        let multi = 1;
-        if (stage > 500) {
-            // 500層以降は10階層ごとにさらに5%ずつ乗算で強くなる（無限インフレ）
-            multi = Math.pow(1.05, Math.floor((stage - 500) / 10)) * 4; 
-        } else if (stage > 400) {
-            multi = 3; // 401〜500層は一律3倍
-        } else if (stage > 300) {
-            multi = 2; // 301〜400層は一律2倍
+        // 2. 再生位置をリセットして読み込み直す
+        gameBgm.currentTime = 0;
+        gameBgm.load();
+
+        // 3. ユーザーのクリック直後に再生を実行
+        const playPromise = gameBgm.play();
+
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                console.log("BGM再生成功！");
+            }).catch(error => {
+                console.log("自動再生がブロックされました。もう一度画面をタップしてください。");
+                // 失敗した場合は、画面全体のどこかを触った瞬間に鳴るように「予約」する
+                document.body.addEventListener('click', () => {
+                    gameBgm.play();
+                }, { once: true });
+            });
         }
-        
-        return {
-            ...base, 
-            id: 900+i, 
-            h: Math.floor((base.h + buff * 5) * multi), 
-            p: Math.floor((base.p + buff) * multi)
-        }; 
-    }), false);
-    
-    document.getElementById('log').innerText = ""; 
-    addLog(`--- 第 ${stage} 層 ---`); 
-    cycle();
+    }
 }
     
     function cycle() {
@@ -3145,22 +3075,10 @@ function getRarityStarsHTML(rarityLevel) {
 
 // ギフトコード処理
 // ギフトコード処理（既存データから取得する修正版）
-// ▼ 既存の applyGiftCode 関数をまるごとこれに置き換えます ▼
 function applyGiftCode() {
     const input = document.getElementById('gift-code-input');
     const code = input.value.trim();
 
-    // 🌟 新しく追加した abis（博打場）の処理
-    if (code === 'abis') {
-        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-        document.getElementById('gambling-view').classList.add('active');
-        document.getElementById('gambling-coin-display').innerText = `コイン: ${coins}`;
-        document.getElementById('guide-message').innerText = "『よく此処がわかったな・・・。』";
-        input.value = "";
-        return;
-    }
-
-    // 🌟 以下、元々あった既存のギフトコード処理
     if (code === '4649') {
         // 重複受け取り防止チェック
         if (localStorage.getItem('gift_4649_claimed')) {
@@ -3168,6 +3086,8 @@ function applyGiftCode() {
             return;
         }
 
+        // 【修正】既存のマスターデータ配列から「雷鰻」を検索
+        // ※もしゲーム内のマスターデータ配列名が `charData` ではない場合（例: `charaList` や `kanjiData` など）、その変数名に書き換えてください。
         const masterChar = charData.find(c => c.name === "雷鰻");
         
         if (!masterChar) {
@@ -3175,41 +3095,56 @@ function applyGiftCode() {
             return;
         }
 
+        // 既存のデータをベースに、手持ち（box）用の個別データを作成
         const raiun = {
-            ...masterChar,
-            id: Date.now() + Math.random(),
-            lv: 1,
-            exp: 0,
-            auraId: null,
-            weaponId: null
+            ...masterChar,                 // 元のステータス（P、H、M、S、スキル等）を丸ごとコピー
+            id: Date.now() + Math.random(), // 個体別のユニークIDを発行（既存システムと衝突させないため）
+            lv: 1,                         // 初期レベル
+            exp: 0,                        // 初期経験値
+            auraId: null,                  // オーラなし
+            weaponId: null                 // 装備なし
         };
 
+        // 手持ち（box）に追加
         box.push(raiun);
+
+        // 使用済みフラグを保存
         localStorage.setItem('gift_4649_claimed', 'true');
 
+        // システムのセーブ関数を呼び出して保存
         if (typeof saveData === 'function') saveData();
+
+        // 画面の表示を更新
         if (typeof updateHomeUI === 'function') updateHomeUI();
         if (typeof renderBox === 'function') renderBox();
 
         alert("🎁 コード認証成功！\n【雷鰻】が仲間に加わりました！");
-        input.value = ""; 
+        input.value = ""; // 入力欄をクリア
 
-    } else if (code === 'KOTA') {
+        } else if (code === 'KOTA') {
+        // 付与するアバターの画像タグ（元のゲームの仕様に合わせて文字列で定義）
         const rewardAvatar = '<img src="200.png">';
 
+        // すでに所持しているかどうかの重複チェック（ownedIcons配列を調べる）
         if (ownedIcons.includes(rewardAvatar)) {
             alert("このギフトコードは既に使用済みか、すでにアバターを所持しています！");
             return;
         }
 
+        // 所持アイコンリスト（配列）に追加
         ownedIcons.push(rewardAvatar);
+        
+        // 【任意】せっかくなので、受け取った瞬間にそのアバターを自動で即座に装備させる処理
         playerIcon = rewardAvatar;
         const playerIconEl = document.getElementById('player-icon');
         if (playerIconEl) {
             playerIconEl.innerHTML = playerIcon;
         }
 
+        // セーブデータに保存して次回以降も消えないようにする
         if (typeof saveData === 'function') saveData();
+        
+        // 着せ替え画面などのUIがあれば更新
         if (typeof renderAvatarSelection === 'function') renderAvatarSelection();
 
         alert("🎁 コード認証成功！\n限定アバターを獲得・装備しました！");
