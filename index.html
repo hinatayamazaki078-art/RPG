@@ -542,7 +542,9 @@
         <div id="weapon-box" class="box-list" style="max-height: 130px; overflow-y: auto;"></div>
 
         <div class="controls" style="grid-template-columns: repeat(4, 1fr); grid-template-rows: auto; margin-top: 10px; gap: 4px;">
-    <button style="grid-column: span 4; background: linear-gradient(135deg, #404, #202); border-color: #f0f; color: #fff; font-size: 16px; height: 50px; margin-bottom: 5px; font-weight: bold; text-shadow: 0 0 5px #f0f;" onclick="openGachaList()">🔮 召喚（ガチャ）一覧</button>
+    <button style="grid-column: span 4; background: #005; border-color: #00f; color: #fff; font-size: 15px; font-weight: bold;" onclick="enterCoopMode()">⚔️ 共闘作戦（マルチ）</button>
+            
+            <button style="grid-column: span 4; background: linear-gradient(135deg, #404, #202); border-color: #f0f; color: #fff; font-size: 16px; height: 50px; margin-bottom: 5px; font-weight: bold; text-shadow: 0 0 5px #f0f;" onclick="openGachaList()">🔮 召喚（ガチャ）一覧</button>
     
             <button style="grid-column: span 2; background: #444; border-color: #f55; color: #fcc; font-size: 12px;" onclick="openInventorySell()">持ち物整理（売却）</button>
             
@@ -3270,7 +3272,7 @@ window.onload = () => {
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-  import { getFirestore, collection, addDoc, getDocs, serverTimestamp, query, orderBy, limit, where, deleteDoc, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+  import { getFirestore, collection, addDoc, getDocs, serverTimestamp, query, orderBy, limit, where, deleteDoc, doc, getDoc, setDoc, onSnapshot, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
   const firebaseConfig = {
     apiKey: "AIzaSyD2v_krmy0L-lzvLF6_AdoeI5dbXyJr4JM",
     authDomain: "mojirpg-7ae6b.firebaseapp.com",
@@ -3608,7 +3610,189 @@ window.addEventListener('load', function() {
     introOverlay.style.display = 'flex';
 });
 
-// ボタンを押して画面を閉じる処理（すでにあれば不要です）
+// ==========================================
+// 共闘作戦（リアルタイムマルチ）システム
+// ==========================================
+window.coopBosses = {
+    "destroyer": {
+        id: "destroyer",
+        name: "デストロイヤー",
+        img: "デストロイヤー.png",
+        P: 40, H: 2500, S: 25, M: 20, maxH: 2500,
+        skills: [
+            { name: "岩の雨", cost: 10, type: "aoe", power: 25, target: "all" },
+            { name: "大暴れ", cost: 5, type: "attack", power: 50, target: "single" }
+        ],
+        minions: ["青鬼", "赤鬼"]
+    }
+};
+
+window.currentCoopRoomId = null;
+window.coopUnsubscribe = null;
+window.isCoopHost = false;
+window.currentCoopBossId = null;
+window.isCoopModeActive = false;
+
+window.enterCoopMode = function() {
+    if (!selectedIds || selectedIds.length === 0) {
+        alert("出撃メンバーを編成してから共闘作戦を選択してください。");
+        return;
+    }
+    window.renderCoopBossList();
+    
+    // 画面の切り替え
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('coop-boss-select-view').classList.add('active');
+};
+
+window.renderCoopBossList = function() {
+    const listDiv = document.getElementById('coop-boss-list');
+    listDiv.innerHTML = '';
+    for (const key in window.coopBosses) {
+        const b = window.coopBosses[key];
+        const btn = document.createElement('button');
+        btn.innerHTML = `<img src="${b.img}" width="30" style="vertical-align:middle;"> ${b.name} 討伐`;
+        btn.className = "stage-select-btn";
+        btn.style.height = "50px";
+        btn.style.borderColor = "#f00";
+        btn.onclick = () => {
+            window.currentCoopBossId = key;
+            window.fetchCoopRooms(key);
+        };
+        listDiv.appendChild(btn);
+    }
+};
+
+window.fetchCoopRooms = async function(bossId) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('coop-room-list-view').classList.add('active');
+    
+    const container = document.getElementById('coop-rooms-container');
+    container.innerHTML = '<div style="color:#ff0; text-align:center;">読み込み中...</div>';
+    try {
+        const q = query(collection(db, "coop_rooms"), where("bossId", "==", bossId), where("status", "==", "waiting"));
+        const snap = await getDocs(q);
+        container.innerHTML = '';
+        if (snap.empty) {
+            container.innerHTML = '<div style="color:#aaa; text-align:center;">募集中のパーティーはありません。</div>';
+            return;
+        }
+        snap.forEach(docSnap => {
+            const data = docSnap.data();
+            const btn = document.createElement('button');
+            btn.className = "stage-select-btn";
+            btn.innerHTML = `${data.hostName} のパーティー <span style="color:#0ff; font-size:12px;">(${data.members.length}/4人)</span>`;
+            btn.onclick = () => window.joinCoopRoom(docSnap.id, data);
+            container.appendChild(btn);
+        });
+    } catch (e) {
+        console.error("ルーム取得エラー", e);
+        container.innerHTML = '<div style="color:#f00; text-align:center;">エラーが発生しました。</div>';
+    }
+};
+
+window.createCoopRoom = async function() {
+    // 現在選択中のキャラ1体目（リーダー）を取得
+    const leaderId = selectedIds[0];
+    const leaderChar = box.find(b => b.id === leaderId);
+    const myUnit = JSON.parse(JSON.stringify(leaderChar)); 
+    const playerName = document.getElementById('player-name').innerText || '名もなき者';
+    
+    try {
+        const docRef = await addDoc(collection(db, "coop_rooms"), {
+            bossId: window.currentCoopBossId,
+            hostName: playerName,
+            status: "waiting",
+            members: [myUnit],
+            createdAt: serverTimestamp()
+        });
+        window.currentCoopRoomId = docRef.id;
+        window.isCoopHost = true;
+        window.listenToCoopRoom();
+    } catch (e) {
+        console.error("ルーム作成エラー", e);
+    }
+};
+
+window.joinCoopRoom = async function(roomId, roomData) {
+    if (roomData.members.length >= 4) {
+        alert("このパーティーは満員です。");
+        return;
+    }
+    const leaderId = selectedIds[0];
+    const leaderChar = box.find(b => b.id === leaderId);
+    const myUnit = JSON.parse(JSON.stringify(leaderChar));
+    
+    try {
+        const roomRef = doc(db, "coop_rooms", roomId);
+        await updateDoc(roomRef, {
+            members: arrayUnion(myUnit)
+        });
+        window.currentCoopRoomId = roomId;
+        window.isCoopHost = false;
+        window.listenToCoopRoom();
+    } catch (e) {
+        console.error("参加エラー", e);
+    }
+};
+
+window.listenToCoopRoom = function() {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('coop-lobby-view').classList.add('active');
+    
+    const roomRef = doc(db, "coop_rooms", window.currentCoopRoomId);
+    const boss = window.coopBosses[window.currentCoopBossId];
+    
+    document.getElementById('coop-lobby-boss-img').src = boss.img;
+    document.getElementById('coop-lobby-boss-name').innerText = boss.name;
+    document.getElementById('coop-start-btn').style.display = window.isCoopHost ? 'block' : 'none';
+
+    window.coopUnsubscribe = onSnapshot(roomRef, (docSnap) => {
+        if (!docSnap.exists()) {
+            alert("パーティーが解散されました。");
+            window.leaveCoopRoom(true);
+            return;
+        }
+        const data = docSnap.data();
+        
+        const membersDiv = document.getElementById('coop-members-list');
+        membersDiv.innerHTML = '';
+        data.members.forEach((m, idx) => {
+            membersDiv.innerHTML += `<div style="border:1px solid #aaa; padding:5px; width:45%; text-align:center; background:#111;">
+                <div style="color:#ff0; font-weight:bold;">${idx === 0 ? '👑' : ''} ${m.name}</div>
+                <div style="font-size:10px; color:#ccc;">HP:${m.h} / 攻:${m.p} / 速:${m.s}</div>
+            </div>`;
+        });
+
+        document.getElementById('coop-room-status').innerText = `${data.members.length}/4人`;
+
+        // ホストが開始を押したときの検知
+        if (data.status === "playing") {
+            if (window.coopUnsubscribe) window.coopUnsubscribe();
+            // ここから同期戦闘用のリスナーに移行する処理を追加します（Step 4へ繋がる部分）
+            alert("戦闘開始準備！（同期バトルエンジンへ接続します）");
+        }
+    });
+};
+
+window.leaveCoopRoom = async function(force = false) {
+    if (window.coopUnsubscribe) window.coopUnsubscribe();
+    if (!force && window.currentCoopRoomId && window.isCoopHost) {
+        await deleteDoc(doc(db, "coop_rooms", window.currentCoopRoomId));
+    }
+    window.currentCoopRoomId = null;
+    window.isCoopHost = false;
+    
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-home').classList.add('active');
+};
+
+window.startCoopBattleHost = async function() {
+    const roomRef = doc(db, "coop_rooms", window.currentCoopRoomId);
+    await updateDoc(roomRef, { status: "playing" });
+};
+    
+    // ボタンを押して画面を閉じる処理（すでにあれば不要です）
 function closeIntro() {
     document.getElementById('intro-overlay').style.display = 'none';
 }
