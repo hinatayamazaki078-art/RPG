@@ -2667,6 +2667,10 @@ function startTargetSelection(type, skillName = null) {
 
 function onUnitClick(targetId) {
     if (!isSelecting) return;
+    if (currentAction === "coop_attack") {
+        window.executeCoopAction(targetId);
+        return;
+    }
     const target = [...party, ...enemies].find(char => char.id === targetId); if (!target) return;
     const u = queue[qIdx];
     const sName = selectedBattleSkill || (u.skillsList && u.skillsList[0] ? u.skillsList[0].name : u.skill);
@@ -3786,47 +3790,8 @@ window.leaveCoopRoom = async function(force = false) {
     document.getElementById('view-home').classList.add('active');
 };
 
-window.startCoopBattleHost = async function() {
-    const roomRef = doc(db, "coop_rooms", window.currentCoopRoomId);
-    const docSnap = await getDoc(roomRef);
-    const roomData = docSnap.data();
-    const boss = window.coopBosses[window.currentCoopBossId];
-
-    // 敵チームの初期データを作成
-    let enemiesData = [
-        { id: "e1", name: "青鬼", p: 15, h: 200, maxH: 200, s: 10, m: 0, isP: false, curH: 200 },
-        { id: "e2", name: boss.name, p: boss.P, h: boss.H, maxH: boss.maxH, s: boss.S, m: boss.M, isP: false, curH: boss.maxH },
-        { id: "e3", name: "赤鬼", p: 20, h: 180, maxH: 180, s: 12, m: 0, isP: false, curH: 180 }
-    ];
-
-    // プレイヤーチームの初期データを作成（現在HPなどのパラメータを追加）
-    let partyData = roomData.members.map((m) => ({
-        ...m,
-        isP: true,
-        curH: m.h,
-        curM: m.m || 0
-    }));
-
-    // すべてのキャラクターを素早さ（s）の降順で並び替え、行動順（queue）を作る
-    let allUnits = [...partyData, ...enemiesData];
-    allUnits.sort((a, b) => b.s - a.s);
-    let queueIds = allUnits.map(u => u.id);
-
-    // サーバーに戦闘開始のデータを叩き込む！
-    await updateDoc(roomRef, { 
-        status: "playing",
-        battleState: {
-            turnIndex: 0,        // 現在誰のターンか（0番目からスタート）
-            queue: queueIds,     // 行動順のIDリスト
-            party: partyData,    // 味方の状態
-            enemies: enemiesData,// 敵の状態
-            log: ["🔥 共闘作戦が開始された！"]
-        }
-    });
-};
-
-    // ==========================================
-// 共闘作戦（リアルタイムマルチ）システム
+// ==========================================
+// 共闘作戦（リアルタイムマルチ）システム (Step 1〜7 統合版)
 // ==========================================
 window.coopBosses = {
     "destroyer": {
@@ -3854,8 +3819,6 @@ window.enterCoopMode = function() {
         return;
     }
     window.renderCoopBossList();
-    
-    // 画面の切り替え
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById('coop-boss-select-view').classList.add('active');
 };
@@ -3881,7 +3844,6 @@ window.renderCoopBossList = function() {
 window.fetchCoopRooms = async function(bossId) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById('coop-room-list-view').classList.add('active');
-    
     const container = document.getElementById('coop-rooms-container');
     container.innerHTML = '<div style="color:#ff0; text-align:center;">読み込み中...</div>';
     try {
@@ -3907,12 +3869,10 @@ window.fetchCoopRooms = async function(bossId) {
 };
 
 window.createCoopRoom = async function() {
-    // 現在選択中のキャラ1体目（リーダー）を取得
     const leaderId = selectedIds[0];
     const leaderChar = box.find(b => b.id === leaderId);
-    const myUnit = JSON.parse(JSON.stringify(leaderChar)); 
+    const myUnit = JSON.parse(JSON.stringify(leaderChar));
     const playerName = document.getElementById('player-name').innerText || '名もなき者';
-    
     try {
         const docRef = await addDoc(collection(db, "coop_rooms"), {
             bossId: window.currentCoopBossId,
@@ -3937,12 +3897,9 @@ window.joinCoopRoom = async function(roomId, roomData) {
     const leaderId = selectedIds[0];
     const leaderChar = box.find(b => b.id === leaderId);
     const myUnit = JSON.parse(JSON.stringify(leaderChar));
-    
     try {
         const roomRef = doc(db, "coop_rooms", roomId);
-        await updateDoc(roomRef, {
-            members: arrayUnion(myUnit)
-        });
+        await updateDoc(roomRef, { members: arrayUnion(myUnit) });
         window.currentCoopRoomId = roomId;
         window.isCoopHost = false;
         window.listenToCoopRoom();
@@ -3954,10 +3911,8 @@ window.joinCoopRoom = async function(roomId, roomData) {
 window.listenToCoopRoom = function() {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById('coop-lobby-view').classList.add('active');
-    
     const roomRef = doc(db, "coop_rooms", window.currentCoopRoomId);
     const boss = window.coopBosses[window.currentCoopBossId];
-    
     document.getElementById('coop-lobby-boss-img').src = boss.img;
     document.getElementById('coop-lobby-boss-name').innerText = boss.name;
     document.getElementById('coop-start-btn').style.display = window.isCoopHost ? 'block' : 'none';
@@ -3969,7 +3924,6 @@ window.listenToCoopRoom = function() {
             return;
         }
         const data = docSnap.data();
-        
         const membersDiv = document.getElementById('coop-members-list');
         membersDiv.innerHTML = '';
         data.members.forEach((m, idx) => {
@@ -3978,14 +3932,11 @@ window.listenToCoopRoom = function() {
                 <div style="font-size:10px; color:#ccc;">HP:${m.h} / 攻:${m.p} / 速:${m.s}</div>
             </div>`;
         });
-
         document.getElementById('coop-room-status').innerText = `${data.members.length}/4人`;
 
-        // ホストが開始を押したときの検知
         if (data.status === "playing") {
             if (window.coopUnsubscribe) window.coopUnsubscribe();
-            // ここから同期戦闘用のリスナーに移行する処理を追加します（Step 4へ繋がる部分）
-            alert("戦闘開始準備！（同期バトルエンジンへ接続します）");
+            window.initCoopBattle(); // 同期バトルエンジンを起動！
         }
     });
 };
@@ -3997,14 +3948,101 @@ window.leaveCoopRoom = async function(force = false) {
     }
     window.currentCoopRoomId = null;
     window.isCoopHost = false;
-    
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById('view-home').classList.add('active');
 };
 
 window.startCoopBattleHost = async function() {
     const roomRef = doc(db, "coop_rooms", window.currentCoopRoomId);
-    await updateDoc(roomRef, { status: "playing" });
+    const docSnap = await getDoc(roomRef);
+    const roomData = docSnap.data();
+    const boss = window.coopBosses[window.currentCoopBossId];
+
+    let enemiesData = [
+        { id: "e1", name: "青鬼", p: 15, h: 200, maxH: 200, s: 10, m: 0, isP: false, curH: 200 },
+        { id: "e2", name: boss.name, p: boss.P, h: boss.H, maxH: boss.maxH, s: boss.S, m: boss.M, isP: false, curH: boss.maxH },
+        { id: "e3", name: "赤鬼", p: 20, h: 180, maxH: 180, s: 12, m: 0, isP: false, curH: 180 }
+    ];
+
+    let partyData = roomData.members.map((m) => ({
+        ...m,
+        isP: true,
+        curH: m.h,
+        curM: m.m || 0
+    }));
+
+    let allUnits = [...partyData, ...enemiesData];
+    allUnits.sort((a, b) => b.s - a.s);
+    let queueIds = allUnits.map(u => u.id);
+
+    await updateDoc(roomRef, { 
+        status: "playing",
+        battleState: {
+            turnIndex: 0,
+            queue: queueIds,
+            party: partyData,
+            enemies: enemiesData,
+            log: ["🔥 共闘作戦が開始された！"]
+        }
+    });
+};
+
+window.coopBattleUnsubscribe = null;
+window.coopBattleState = null; 
+
+window.initCoopBattle = function() {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-battle').classList.add('active');
+    document.getElementById('btn-retreat').style.display = "none"; 
+    document.getElementById('header-stage-label').innerText = `共闘作戦 討伐戦`;
+
+    const roomRef = doc(db, "coop_rooms", window.currentCoopRoomId);
+
+    window.coopBattleUnsubscribe = onSnapshot(roomRef, (docSnap) => {
+        if (!docSnap.exists()) return;
+        const data = docSnap.data();
+
+        if (data.status === "playing" && data.battleState) {
+            window.coopBattleState = data.battleState;
+            party = data.battleState.party;
+            enemies = data.battleState.enemies;
+
+            const logDiv = document.getElementById('log');
+            logDiv.innerHTML = data.battleState.log.map(msg => `<div>${msg}</div>`).join('');
+            logDiv.scrollTop = logDiv.scrollHeight;
+
+            updateUI(); 
+            window.checkCoopTurn();
+        }
+    });
+};
+
+window.checkCoopTurn = function() {
+    const state = window.coopBattleState;
+    if (!state) return;
+
+    const currentActorId = state.queue[state.turnIndex];
+    const myLeaderId = selectedIds[0];
+
+    if (currentActorId === myLeaderId) {
+        document.getElementById('battle-controls').style.display = 'grid';
+        document.getElementById('btn-atk').onclick = () => window.startCoopTargetSelection('attack');
+        document.getElementById('btn-skl').onclick = () => alert("スキルの同期実装は次のステップで行います！");
+    } else {
+        document.getElementById('battle-controls').style.display = 'none';
+
+        const isEnemyTurn = state.enemies.some(e => e.id === currentActorId);
+        if (isEnemyTurn && window.isCoopHost) {
+            setTimeout(() => window.executeCoopEnemyTurn(currentActorId), 1500);
+        }
+    }
+};
+
+window.startCoopTargetSelection = function(type) {
+    isSelecting = true; 
+    currentAction = "coop_attack"; 
+    addLog("標的を選択してください（マルチ同期）"); 
+    updateUI();
 };
     
     // ボタンを押して画面を閉じる処理（すでにあれば不要です）
@@ -4136,6 +4174,77 @@ console.log("送信するアバターデータ:", document.getElementById('playe
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#39;');
   }
+
+// ==========================================
+// 共闘作戦：ダメージ計算とサーバー送信エンジン
+// ==========================================
+
+window.executeCoopAction = async function(targetId) {
+    isSelecting = false;
+    currentAction = null;
+    
+    // 操作パネルを隠す
+    document.getElementById('battle-controls').style.display = 'none';
+
+    const state = window.coopBattleState;
+    const myActorId = state.queue[state.turnIndex];
+    const myActor = [...state.party, ...state.enemies].find(u => u.id === myActorId);
+    const target = [...state.party, ...state.enemies].find(u => u.id === targetId);
+
+    if (!target || target.curH <= 0) {
+        alert("その相手は選択できません！");
+        window.checkCoopTurn();
+        return;
+    }
+
+    // ダメージ計算（基本攻撃力の±10%）
+    let dmg = Math.floor(myActor.p * (1 + (Math.random() * 0.2 - 0.1)));
+    if (dmg < 1) dmg = 1;
+    
+    target.curH = Math.max(0, target.curH - dmg);
+
+    let logMsg = `⚔️ ${myActor.name} の攻撃！ ${target.name} に ${dmg} のダメージ！`;
+
+    // 演出（もし既存の演出関数があれば呼び出し）
+    if (typeof showDamageNumber === 'function') showDamageNumber(target.id, dmg, 'normal');
+
+    // ターンの進行
+    state.turnIndex = (state.turnIndex + 1) % state.queue.length;
+
+    // サーバーへ送信
+    const roomRef = doc(db, "coop_rooms", window.currentCoopRoomId);
+    await updateDoc(roomRef, {
+        "battleState.party": state.party,
+        "battleState.enemies": state.enemies,
+        "battleState.turnIndex": state.turnIndex,
+        "battleState.log": arrayUnion(logMsg)
+    });
+};
+
+window.executeCoopEnemyTurn = async function(enemyId) {
+    const state = window.coopBattleState;
+    const enemy = state.enemies.find(e => e.id === enemyId);
+    const alivePlayers = state.party.filter(p => p.curH > 0);
+    
+    if (alivePlayers.length === 0) return;
+
+    const target = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
+    let dmg = Math.floor(enemy.p * (1 + (Math.random() * 0.2 - 0.1)));
+    if (dmg < 1) dmg = 1;
+
+    target.curH = Math.max(0, target.curH - dmg);
+    let logMsg = `👹 ${enemy.name} の攻撃！ ${target.name} に ${dmg} のダメージ！`;
+
+    state.turnIndex = (state.turnIndex + 1) % state.queue.length;
+
+    const roomRef = doc(db, "coop_rooms", window.currentCoopRoomId);
+    await updateDoc(roomRef, {
+        "battleState.party": state.party,
+        "battleState.enemies": state.enemies,
+        "battleState.turnIndex": state.turnIndex,
+        "battleState.log": arrayUnion(logMsg)
+    });
+};
 
 </script>
 </body>
