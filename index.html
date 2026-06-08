@@ -3356,16 +3356,33 @@ window.updateCoopBattleUI = function() {
     // 敵側の表示更新
     const enemiesDiv = document.getElementById('coop-enemies-area');
     if (enemiesDiv) {
-        enemiesDiv.innerHTML = state.enemies.map(e => `
-            <div class="char-box enemy ${e.curH <= 0 ? 'dead' : ''}" id="coop-enemy-${e.id}" onclick="onUnitClick('${e.id}')">
-                
-                <img src="${e.img}" width="80" style="object-fit:contain; display:block; margin:0 auto;">
-                
-                <div>${e.name}</div>
-                <div class="hp-bar-bg"><div class="hp-bar" style="width:${(e.curH/e.maxH)*100}%"></div></div>
-                <div>HP: ${e.curH}/${e.maxH}</div>
-            </div>
-        `).join('');
+        enemyArea.innerHTML = state.enemies.map(e => {
+    const hpPer = Math.max(0, (e.curH / e.maxH) * 100);
+    const isDead = e.curH <= 0 ? "opacity:0.3;" : "";
+    const isTarget = (state.selectedTargetId === e.id) ? "border:2px solid #ff0;" : "border:1px solid #444;";
+
+    // 💡 修正ポイント：デストロイヤーの場合は <img> タグでイラストを表示！
+    let enemyGraphic = `<div style="font-size:32px; margin-bottom:5px;">👹</div>`; // 雑魚敵用のデフォルト
+    
+    // 名前に「デストロイヤー」が含まれているかチェック
+    if (e.name && e.name.includes("デストロイヤー")) { 
+        // フォルダ内の「デストロイヤー.png」を読み込む
+        enemyGraphic = `<img src="デストロイヤー.png" style="width: 120px; height: 120px; object-fit: contain; margin: 0 auto 8px auto; display: block; filter: drop-shadow(0 0 5px #ff0000);">`;
+    }
+
+    return `
+    <div onclick="window.selectCoopTarget('${e.id}')" style="background:#111; padding:10px; margin-bottom:8px; text-align:center; border-radius:4px; cursor:pointer; ${isTarget} ${isDead}">
+        <div style="background:#333; width:100%; height:6px; border-radius:3px; overflow:hidden; margin-bottom:8px;">
+            <div style="background:#ff3333; width:${hpPer}%; height:100%;"></div>
+        </div>
+        
+        ${enemyGraphic}
+
+        <div style="font-size:14px; font-weight:bold; color:#ff4444; margin-top:4px;">${e.name}</div>
+        <div style="font-size:11px; color:#ccc;">HP: ${e.curH.toLocaleString()} / ${e.maxH.toLocaleString()}</div>
+    </div>
+    `;
+}).join("");
     }
 };
 
