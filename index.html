@@ -3919,7 +3919,13 @@ window.listenToCoopRoom = function() {
         // ホストが開始を押したときの検知
         if (data.status === "playing") {
             if (window.coopUnsubscribe) window.coopUnsubscribe();
-            window.initCoopBattle(); // ← 同期バトルエンジンを起動！
+            
+            // ▼ ここを書き換え ▼
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById('view-battle').classList.add('active');
+            document.getElementById('btn-retreat').style.display = "none"; 
+            document.getElementById('header-stage-label').innerText = `共闘作戦 討伐戦`;
+            window.listenToCoopBattle(); // 新しい同期システムを起動！
         }
     });
 };
