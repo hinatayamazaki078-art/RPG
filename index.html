@@ -531,8 +531,6 @@
         <div class="sell-btn-area">
             <button id="btn-sell-unit" class="sell-action-btn" onclick="sellSelectedUnit()" disabled>選択した漢字をまとめて売却（別れの儀）</button>
         </div>
-
-        <button class="menu-btn" onclick="window.enterCoopMode()">共闘作戦</button>
         
         <div class="section-title">【所持オーラ】</div>
         <div id="aura-box" class="box-list" style="max-height: 130px; overflow-y: auto;"></div>
@@ -779,13 +777,36 @@
         <div style="background: #111; border: 2px solid #aa0; border-radius: 5px; width: 100%; max-width: 340px; padding: 15px;">
             <h3 style="margin-top: 0; text-align: center; color: #ff0;">補助アイテム一覧</h3>
             <div id="support-item-list" style="max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px;">
-                </div>
+            </div>
             <button onclick="closeSupportItemSelect()" style="width: 100%; padding: 10px; background: #333; border: 1px solid #777;">閉じる</button>
         </div>
-    </div>
+    </div> <div id="coop-boss-select-view" class="view">
+        <h2 style="color:#f00;">共闘作戦 - 討伐対象選択</h2>
+        <div class="guide-text">※討伐したいボスを選択してください</div>
+        <div id="coop-boss-list" class="box-list" style="grid-template-columns: 1fr; max-height: 480px; overflow-y: auto;">
+        </div>
+        <button onclick="returnToHome()" style="height:45px; margin-top:15px;">拠点に戻る</button>
     </div>
 
-<script>
+    <div id="coop-room-list-view" class="view">
+        <h2 style="color:#0ff;">募集中のパーティー</h2>
+        <div id="coop-rooms-container" style="display: flex; flex-direction: column; gap: 8px; max-height: 350px; overflow-y: auto; padding: 5px; border: 1px solid #333; background: #050505;"></div>
+        <button onclick="window.createCoopRoom()" style="height:50px; background:#d33; border-color:#f00; color:#fff; font-size: 16px; margin-top:10px; font-weight:bold;">パーティーを作成する</button>
+        <button onclick="document.getElementById('coop-room-list-view').classList.remove('active'); document.getElementById('coop-boss-select-view').classList.add('active');" style="height:45px; margin-top:15px;">戻る</button>
+    </div>
+
+    <div id="coop-lobby-view" class="view">
+        <h2 style="color:#ff0;">待機ロビー (<span id="coop-room-status">募集中</span>)</h2>
+        <div style="text-align: center; margin-bottom: 10px; padding: 10px; border: 1px solid #550; background: #110; border-radius: 5px;">
+            <img id="coop-lobby-boss-img" src="" width="120" style="object-fit:contain;">
+            <h3 id="coop-lobby-boss-name" style="margin: 5px 0; color:#f00;"></h3>
+        </div>
+        <div id="coop-members-list" style="display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-bottom: 10px;">
+        </div>
+        <button id="coop-start-btn" onclick="window.startCoopBattleHost()" style="display:none; height:50px; background:#f00; border-color:#fff; color:#fff; font-size: 16px; margin-top:10px; font-weight:bold; box-shadow: 0 0 10px #f00;">準備完了（戦闘開始）</button>
+        <button onclick="window.leaveCoopRoom()" style="height:45px; margin-top:15px;">退出して拠点に戻る</button>
+    </div>
+    </div> <script>
 document.body.addEventListener('click', function() {
     const bgm = document.getElementById('game-bgm');
     if (bgm && bgm.paused) {
