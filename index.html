@@ -3357,15 +3357,12 @@ window.updateCoopBattleUI = function() {
     const enemiesDiv = document.getElementById('coop-enemies-area');
     if (enemiesDiv) {
         enemiesDiv.innerHTML = state.enemies.map(e => {
-            // ここでデストロイヤーの場合だけパスを強制的に上書きします
-            let imgSource = e.img;
-            if (e.name === "デストロイヤー") {
-                imgSource = "デストロイヤー.png";
-            }
+            // Firestoreのデータを無視して、デストロイヤーなら画像を指定する
+            const displayImg = (e.name === "デストロイヤー") ? "デストロイヤー.png" : e.img;
 
             return `
             <div class="char-box enemy ${e.curH <= 0 ? 'dead' : ''}" id="coop-enemy-${e.id}" onclick="onUnitClick('${e.id}')">
-                <img src="${imgSource}" style="width:100px; height:100px; object-fit:contain; display:block; margin:0 auto;">
+                <img src="${displayImg}" width="80" style="object-fit:contain; display:block; margin:0 auto;">
                 <div>${e.name}</div>
                 <div class="hp-bar-bg"><div class="hp-bar" style="width:${(e.curH/e.maxH)*100}%"></div></div>
                 <div>HP: ${e.curH}/${e.maxH}</div>
