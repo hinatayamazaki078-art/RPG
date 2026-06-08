@@ -3358,7 +3358,7 @@ window.updateCoopBattleUI = function() {
     if (enemiesDiv) {
         enemiesDiv.innerHTML = state.enemies.map(e => `
             <div class="char-box enemy ${e.curH <= 0 ? 'dead' : ''}" id="coop-enemy-${e.id}" onclick="onUnitClick('${e.id}')">
-                <img src="${e.img}" width="80" style="object-fit:contain;">
+                <img src="${デストロイヤー.png}" width="80" style="object-fit:contain;">
                 <div>${e.name}</div>
                 <div class="hp-bar-bg"><div class="hp-bar" style="width:${(e.curH/e.maxH)*100}%"></div></div>
                 <div>HP: ${e.curH}/${e.maxH}</div>
