@@ -3295,6 +3295,124 @@ window.onload = () => {
     // UIの更新
     updateHomeUI();
 };
+// ==========================================
+// 共闘作戦：リアルタイム同期システム（リスナー）
+// ==========================================
+
+window.coopUnsubscribe = null; // リスナーを解除するための変数
+
+window.listenToCoopBattle = function() {
+    if (!window.currentCoopRoomId) return;
+
+    const roomRef = doc(db, "coop_rooms", window.currentCoopRoomId);
+    
+    // onSnapshotでデータベースの変化をリアルタイムに監視する
+    window.coopUnsubscribe = onSnapshot(roomRef, (docSnap) => {
+        if (!docSnap.exists()) {
+            alert("通信が切断されたか、ルームが解散されました。");
+            window.leaveCoopRoom();
+            return;
+        }
+
+        const data = docSnap.data();
+        
+        // 部屋のステータスが「playing（戦闘中）」じゃない場合は無視
+        if (data.status !== "playing" || !data.battleState) return;
+
+        // 最新のバトル状態をサーバーから受け取って更新
+        window.coopBattleState = data.battleState;
+        
+        // 画面の表示を最新状態に書き換える（HPバーなど）
+        updateCoopBattleUI();
+        
+        // ログを画面に表示する
+        if (data.battleState.log && data.battleState.log.length > 0) {
+            const latestLog = data.battleState.log[data.battleState.log.length - 1];
+            logMessage(latestLog);
+        }
+
+        // 次のターンが誰かを判定して動かす
+        window.checkCoopTurn();
+    });
+};
+
+// 画面のHPバーなどを更新する関数
+window.updateCoopBattleUI = function() {
+    const state = window.coopBattleState;
+    if (!state) return;
+
+    // プレイヤー側の表示更新
+    const partyDiv = document.getElementById('coop-party-area');
+    if (partyDiv) {
+        partyDiv.innerHTML = state.party.map(p => `
+            <div class="char-box ${p.curH <= 0 ? 'dead' : ''}" id="coop-char-${p.id}">
+                <div>${p.name}</div>
+                <div class="hp-bar-bg"><div class="hp-bar" style="width:${(p.curH/p.maxH)*100}%"></div></div>
+                <div>HP: ${p.curH}/${p.maxH}</div>
+            </div>
+        `).join('');
+    }
+
+    // 敵側の表示更新
+    const enemiesDiv = document.getElementById('coop-enemies-area');
+    if (enemiesDiv) {
+        enemiesDiv.innerHTML = state.enemies.map(e => `
+            <div class="char-box enemy ${e.curH <= 0 ? 'dead' : ''}" id="coop-enemy-${e.id}" onclick="onUnitClick('${e.id}')">
+                <img src="${e.img}" width="80" style="object-fit:contain;">
+                <div>${e.name}</div>
+                <div class="hp-bar-bg"><div class="hp-bar" style="width:${(e.curH/e.maxH)*100}%"></div></div>
+                <div>HP: ${e.curH}/${e.maxH}</div>
+            </div>
+        `).join('');
+    }
+};
+
+// ターンの判定と進行を行う関数
+window.checkCoopTurn = function() {
+    const state = window.coopBattleState;
+    if (!state || !state.queue || state.queue.length === 0) return;
+
+    // 勝利・敗北の判定
+    const allEnemiesDead = state.enemies.every(e => e.curH <= 0);
+    const allPlayersDead = state.party.every(p => p.curH <= 0);
+
+    if (allEnemiesDead) {
+        logMessage("🎉 共闘作戦クリア！ボスを撃破しました！");
+        setTimeout(() => window.leaveCoopRoom(), 3000);
+        return;
+    }
+    if (allPlayersDead) {
+        logMessage("💀 パーティーは全滅した...");
+        setTimeout(() => window.leaveCoopRoom(), 3000);
+        return;
+    }
+
+    // 現在のターンのキャラクターIDを取得
+    const currentActorId = state.queue[state.turnIndex];
+    const isMyTurn = currentActorId === state.myCharId; // 自分のキャラのターンか？
+    
+    // 敵のターンの場合
+    const isEnemyTurn = state.enemies.some(e => e.id === currentActorId);
+
+    // 操作パネル（たたかうボタン等）の表示切り替え
+    const controls = document.getElementById('battle-controls');
+    if (controls) {
+        if (isMyTurn) {
+            controls.style.display = 'flex';
+            logMessage("あなたのターンです！コマンドを選択してください。");
+        } else {
+            controls.style.display = 'none';
+        }
+    }
+
+    // 敵のターンの場合、ホスト（部屋を作った人）の画面でだけ敵の行動を計算して送信する
+    if (isEnemyTurn && window.isCoopHost) {
+        setTimeout(() => {
+            window.executeCoopEnemyTurn(currentActorId);
+        }, 1500); // 1.5秒後に敵が攻撃
+    }
+};
+        
 </script>
 
 <script type="module">
