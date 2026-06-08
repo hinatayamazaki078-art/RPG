@@ -3663,12 +3663,17 @@ window.isCoopModeActive = false;
 
 window.enterCoopMode = function() {
     if (!selectedIds || selectedIds.length === 0) {
-        alert("出撃メンバーを編成してから共闘作戦を選択してください。");
+        alert("共闘作戦に連れていく漢字を1体選択してください。");
         return;
     }
-    window.renderCoopBossList();
     
-    // 画面の切り替え
+    // 👑 一人一体制限の安全装置を追加！
+    if (selectedIds.length > 1) {
+        alert("🚨 共闘作戦には1体しか連れていけません！\n編成画面で1体だけ選んだ状態にしてから、再度ボタンを押してください。");
+        return;
+    }
+    
+    window.renderCoopBossList();
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById('coop-boss-select-view').classList.add('active');
 };
