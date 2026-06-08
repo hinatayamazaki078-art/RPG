@@ -3354,21 +3354,22 @@ window.updateCoopBattleUI = function() {
     }
 
     // 敵側の表示更新
-const enemiesDiv = document.getElementById('coop-enemies-area');
-if (enemiesDiv) {
-    enemiesDiv.innerHTML = state.enemies.map(e => {
-        // --- ★ここを修正：名前がデストロイヤーなら、imgプロパティに関係なく強制表示★ ---
-        const imagePath = (e.name === "デストロイヤー") ? "デストロイヤー.png" : e.img;
+    const enemiesDiv = document.getElementById('coop-enemies-area');
+    if (enemiesDiv) {
+        enemiesDiv.innerHTML = state.enemies.map(e => {
+            // Firestoreのデータを無視して、デストロイヤーなら画像を指定する
+            const displayImg = (e.name === "デストロイヤー") ? "デストロイヤー.png" : e.img;
 
-        return `
-        <div class="char-box enemy ${e.curH <= 0 ? 'dead' : ''}" id="coop-enemy-${e.id}" onclick="onUnitClick('${e.id}')">
-            <img src="${imagePath}" style="width:80px; height:80px; object-fit:contain; display:block; margin:0 auto;">
-            <div>${e.name}</div>
-            <div class="hp-bar-bg"><div class="hp-bar" style="width:${(e.curH/e.maxH)*100}%"></div></div>
-            <div>HP: ${e.curH}/${e.maxH}</div>
-        </div>`;
-    }).join('');
-}
+            return `
+            <div class="char-box enemy ${e.curH <= 0 ? 'dead' : ''}" id="coop-enemy-${e.id}" onclick="onUnitClick('${e.id}')">
+                <img src="${displayImg}" width="80" style="object-fit:contain; display:block; margin:0 auto;">
+                <div>${e.name}</div>
+                <div class="hp-bar-bg"><div class="hp-bar" style="width:${(e.curH/e.maxH)*100}%"></div></div>
+                <div>HP: ${e.curH}/${e.maxH}</div>
+            </div>`;
+        }).join('');
+    }
+};
 // ターンの判定と進行を行う関数
 window.checkCoopTurn = function() {
     const state = window.coopBattleState;
