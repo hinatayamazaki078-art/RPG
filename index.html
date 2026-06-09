@@ -2690,8 +2690,13 @@ function startTargetSelection(type, skillName = null) {
 
 function onUnitClick(targetId) {
     if (!isSelecting) return;
+    
+    // ▼ ここから書き換え（通常攻撃とスキルの分岐を追加）
     if (currentAction === "coop_attack") {
-        window.executeCoopAction(targetId);
+        window.executeCoopAction(targetId, 'attack');
+        return;
+    } else if (currentAction === "coop_skill") {
+        window.executeCoopAction(targetId, 'skill', window.coopSelectedSkill);
         return;
     }
     const target = [...party, ...enemies].find(char => char.id === targetId); if (!target) return;
@@ -4195,25 +4200,75 @@ window.checkCoopTurn = function() {
     const currentActorId = state.queue[state.turnIndex];
     const myLeaderId = selectedIds[0];
 
+    // --- 既存の checkCoopTurn の一部を書き換え ---
     if (currentActorId === myLeaderId) {
         document.getElementById('battle-controls').style.display = 'grid';
         document.getElementById('btn-atk').onclick = () => window.startCoopTargetSelection('attack');
-        document.getElementById('btn-skl').onclick = () => alert("スキルの同期実装は次のステップで行います！");
+        // ▼ ここを書き換え：アラートを消して専用メニューを開く関数を呼ぶ
+        document.getElementById('btn-skl').onclick = () => window.showCoopSkillMenu();
     } else {
-        document.getElementById('battle-controls').style.display = 'none';
+// ----------------------------------------------
 
-        const isEnemyTurn = state.enemies.some(e => e.id === currentActorId);
-        if (isEnemyTurn && window.isCoopHost) {
-            setTimeout(() => window.executeCoopEnemyTurn(currentActorId), 1500);
-        }
-    }
+// ▼ ここから新規追加 ▼
+window.coopSelectedSkill = null;
+
+window.showCoopSkillMenu = function() {
+    const state = window.coopBattleState;
+    const myActorId = state.queue[state.turnIndex];
+    const u = state.party.find(p => p.id === myActorId);
+    if (!u || !u.skillsList) return;
+
+    const selectArea = document.getElementById('skill-select-controls');
+    document.getElementById('battle-controls').style.display = 'none';
+    selectArea.style.display = 'grid';
+    
+    let btnHtml = "";
+    u.skillsList.forEach(s => {
+        if (s.name === '再生' || s.name === '不死の再生') return;
+        let costM = SKILL_DATA[s.name] ? SKILL_DATA[s.name].cost : 1;
+        let canCast = true;
+        let cText = `MP:${costM}`;
+        
+        if (s.name === '捨て身') { canCast = (u.curH > 5); cText = "HP:5"; }
+        else if (s.name === '精霊の歌') { canCast = (u.curH > 1); cText = "HP半減"; }
+        else if (s.oncePerMatch) { canCast = !s.used; cText = s.used ? "使用済" : "1回制限"; }
+        else { canCast = (u.curM >= costM); }
+        
+        btnHtml += `<button onclick="window.confirmCoopSkillSelection('${s.name}')" ${!canCast?'disabled':''} style="font-size:12px; line-height:1.2; padding:4px 2px;">${s.name}<br><span style="font-size:8px; color:#ff0;">(${cText})</span></button>`;
+    });
+    btnHtml += `<button onclick="cancelSkillMenu()" style="background:#222; font-size:12px;">戻る</button>`;
+    selectArea.innerHTML = btnHtml;
 };
 
-window.startCoopTargetSelection = function(type) {
+window.confirmCoopSkillSelection = function(skillName) {
+    window.coopSelectedSkill = skillName;
+    document.getElementById('skill-select-controls').style.display = 'none';
+    window.startCoopTargetSelection('skill', skillName);
+};
+
+window.startCoopTargetSelection = function(type, skillName = null) {
+    // 全体攻撃（ターゲット選択が不要なスキル）の判定
+    if (type === 'skill') {
+        const isAoE = ['感電','咆哮','輝炎ノ息','虚影','鱗粉','御廚子','巨大触手','炎のブレス','伏魔御廚子','達磨さんが転んだ','ムチ','ブリザード','妖精の粉','攻撃増幅薬','蘇りの歌','強固な甲羅','天変地異','デスペラードヒューリー','支配','グレイデンスレイヴ','忘却の波動'].includes(skillName);
+        if (isAoE) {
+            // 全体スキルの場合はターゲット選択をスキップして即座に実行
+            return window.executeCoopAction(null, 'skill', skillName);
+        }
+    }
+
+    // ターゲット選択モードに入る
     isSelecting = true; 
-    currentAction = "coop_attack"; 
-    addLog("標的を選択してください（マルチ同期）"); 
-    updateUI();
+    // 攻撃なら "coop_attack"、スキルなら "coop_skill" に切り替える
+    currentAction = (type === 'attack') ? "coop_attack" : "coop_skill"; 
+    
+    if (type === 'attack') {
+        addLog("標的を選択してください（マルチ同期）"); 
+    } else {
+        addLog(`【${skillName}】の対象を選択してください`);
+    }
+    
+    // ▼ ここをシングル用 updateUI() から 共闘用 updateCoopBattleUI() に変更
+    window.updateCoopBattleUI();
 };
     
     // ボタンを押して画面を閉じる処理（すでにあれば不要です）
@@ -4350,45 +4405,182 @@ console.log("送信するアバターデータ:", document.getElementById('playe
 // 共闘作戦：ダメージ計算とサーバー送信エンジン
 // ==========================================
 
-window.executeCoopAction = async function(targetId) {
+window.executeCoopAction = async function(targetId, type, skillName = null) {
     isSelecting = false;
     currentAction = null;
-    
-    // 操作パネルを隠す
     document.getElementById('battle-controls').style.display = 'none';
 
     const state = window.coopBattleState;
     const myActorId = state.queue[state.turnIndex];
-    const myActor = [...state.party, ...state.enemies].find(u => u.id === myActorId);
-    const target = [...state.party, ...state.enemies].find(u => u.id === targetId);
+    const myActor = state.party.find(u => u.id === myActorId);
+    let target = targetId ? [...state.party, ...state.enemies].find(u => u.id === targetId) : null;
 
-    if (!target || target.curH <= 0) {
-        alert("その相手は選択できません！");
-        window.checkCoopTurn();
-        return;
+    if (!myActor) return;
+
+    let logMsgs = [];
+    let isCrit = false;
+
+    // --- 1. 通常攻撃の処理 ---
+    if (type === 'attack') {
+        if (!target) return;
+        myActor.curM = Math.min(myActor.maxM, (myActor.curM || 0) + 3); // 通常攻撃でMPが3回復
+        
+        let dmg = Math.floor(myActor.p * (1 + (myActor.atkBuff || 0)));
+        // 会心オーラ判定
+        if (myActor.auras && myActor.auras.some(a => a.type === '会心' && Math.random() * 100 < a.value)) {
+            dmg *= 2;
+            isCrit = true;
+        }
+        if (dmg < 1) dmg = 1;
+        
+        target.curH = Math.max(0, target.curH - dmg);
+        logMsgs.push(isCrit ? `💥 ${myActor.name} の会心の一撃！ ${target.name} に ${dmg} のダメージ！` : `⚔️ ${myActor.name} の攻撃！ ${target.name} に ${dmg} のダメージ！`);
+        
+        if (typeof showDamageNumber === 'function') showDamageNumber(target.id, dmg, isCrit ? 'crit' : 'normal');
+
+    // --- 2. スキルの処理 ---
+    } else if (type === 'skill') {
+        const sName = skillName;
+        let costM = SKILL_DATA[sName] ? SKILL_DATA[sName].cost : 0;
+        
+        // コスト（MPやHP）の消費
+        if (sName === '捨て身') myActor.curH = Math.max(1, myActor.curH - 5);
+        else if (sName === '精霊の歌') myActor.curH = Math.max(1, Math.floor(myActor.curH / 2));
+        else myActor.curM = Math.max(0, (myActor.curM || 0) - costM);
+
+        logMsgs.push(`✨ ${myActor.name}：【${sName}】！`);
+
+        // 各スキルの効果処理（シングルプレイのロジックを共闘に完全移植）
+        if (sName === '回復' && target) {
+            let heal = Math.floor(myActor.p * 1.2);
+            target.curH = Math.min(target.maxH, target.curH + heal);
+            logMsgs.push(`🌿 ${target.name} のHPが ${heal} 回復した！`);
+            if (typeof showDamageNumber === 'function') showDamageNumber(target.id, heal, 'heal');
+        }
+        else if (sName === '全回復' && target) {
+            target.curH = target.maxH;
+            logMsgs.push(`💚 ${target.name} のHPが全回復した！`);
+            if (typeof showDamageNumber === 'function') showDamageNumber(target.id, "全回復", 'heal');
+        }
+        else if (sName === '斬撃' && target) {
+            target.curH = Math.max(0, target.curH - 5);
+            logMsgs.push(`🗡️ ${target.name} に固定 5 ダメージ！`);
+            if (typeof showDamageNumber === 'function') showDamageNumber(target.id, 5, 'normal');
+        }
+        else if (sName === '剛腕' && target) {
+            let dmg = Math.floor(myActor.p * 1.8);
+            target.curH = Math.max(0, target.curH - dmg);
+            logMsgs.push(`💥 ${target.name} に ${dmg} の重撃ダメージ！`);
+            if (typeof showDamageNumber === 'function') showDamageNumber(target.id, dmg, 'normal');
+        }
+        else if (sName === '鉄壁') {
+            myActor.defBuff = 0.5;
+            logMsgs.push(`🛡️ ${myActor.name} の防御力がアップ！`);
+        }
+        else if (sName === '瞑想') {
+            myActor.curM = Math.min(myActor.maxM, (myActor.curM || 0) + 5);
+            logMsgs.push(`🧘 ${myActor.name} のMPが 5 回復した！`);
+        }
+        else if (['感電', '咆哮', '輝炎ノ息', '虚影', '鱗粉', '御廚子', '巨大触手', '炎のブレス', '伏魔御廚子', '達磨さんが転んだ', 'ムチ', 'ブリザード', '天変地異', 'デスペラードヒューリー', '支配', 'グレイデンスレイヴ', '忘却の波動'].includes(sName)) {
+            // 全体攻撃スキル一斉処理
+            let dmg = 5;
+            if (sName === '感電') dmg = 3;
+            if (sName === '咆哮') dmg = 5;
+            if (sName === '輝炎ノ息') dmg = 12;
+            if (sName === '虚影') dmg = 15;
+            if (sName === '鱗粉') { dmg = 5; myActor.curH = Math.min(myActor.maxH, myActor.curH + 5); }
+            if (sName === '御廚子') dmg = 35;
+            if (sName === '巨大触手') dmg = 20;
+            if (sName === '炎のブレス') dmg = 10;
+            if (sName === '伏魔御廚子') dmg = 80;
+            if (sName === '達磨さんが転んだ') dmg = 40;
+            if (sName === 'ムチ') dmg = 6;
+            if (sName === 'ブリザード') dmg = 15;
+            if (sName === '天変地異') dmg = 150;
+            if (sName === 'デスペラードヒューリー') dmg = 120;
+            if (sName === '支配') dmg = 60;
+            if (sName === 'グレイデンスレイヴ') dmg = 200;
+            if (sName === '忘却の波動') dmg = 100;
+
+            state.enemies.forEach(e => {
+                if (e.curH > 0) {
+                    e.curH = Math.max(0, e.curH - dmg);
+                    if (typeof showDamageNumber === 'function') showDamageNumber(e.id, dmg, 'normal');
+                }
+            });
+            logMsgs.push(`💥 敵全体に ${dmg} の範囲ダメージ！`);
+        }
+        else if (sName === '妖精の粉') {
+            state.party.forEach(p => {
+                if (p.curH > 0) {
+                    p.curH = Math.min(p.maxH, p.curH + 30);
+                    if (typeof showDamageNumber === 'function') showDamageNumber(p.id, 30, 'heal');
+                }
+            });
+            logMsgs.push(`🧚 味方全体のHPが 30 回復した！`);
+        }
+        else if (sName === '攻撃増幅薬') {
+            state.party.forEach(p => {
+                if (p.curH > 0) p.atkBuff = (p.atkBuff || 0) + 0.2;
+            });
+            logMsgs.push(`🧪 味方全体の攻撃力が 20% 上昇した！`);
+        }
+        else if (sName === '蘇りの歌') {
+            state.party.forEach(p => {
+                if (p.curH <= 0) {
+                    p.curH = 10;
+                    logMsgs.push(`🎵 ${p.name} がHP10で復活した！`);
+                }
+            });
+        }
+        else if (sName === '強固な甲羅') {
+            myActor.defBuff = (myActor.defBuff || 0) + 0.3;
+            logMsgs.push(`🐢 ${myActor.name} の防御力が 30% 上昇した！`);
+        }
+        else if (sName === '捨て身' && target) {
+            target.curH = Math.max(0, target.curH - 30);
+            logMsgs.push(`💥 ${target.name} に 30 の捨て身ダメージ！`);
+            if (typeof showDamageNumber === 'function') showDamageNumber(target.id, 30, 'normal');
+        }
+        else if (sName === '精霊の歌') {
+            state.party.forEach(p => {
+                if (p.curH > 0) {
+                    p.curH = Math.min(p.maxH, p.curH + 100);
+                    if (typeof showDamageNumber === 'function') showDamageNumber(p.id, 100, 'heal');
+                }
+            });
+            logMsgs.push(`🌱 味方全体のHPが 100 回復した！`);
+        }
+        else if (sName === '神の裁き' && target) {
+            target.curH = Math.max(0, target.curH - 300);
+            logMsgs.push(`⚡ ${target.name} に 300 の神罰ダメージ！`);
+            if (typeof showDamageNumber === 'function') showDamageNumber(target.id, 300, 'crit');
+        }
+        else if (sName === '極光' && target) {
+            target.curH = Math.max(0, target.curH - 50);
+            myActor.curH = Math.min(myActor.maxH, myActor.curH + 20);
+            logMsgs.push(`✨ ${target.name} に 50 ダメージ、自身のHPを 20 回復！`);
+            if (typeof showDamageNumber === 'function') showDamageNumber(target.id, 50, 'normal');
+            if (typeof showDamageNumber === 'function') showDamageNumber(myActor.id, 20, 'heal');
+        }
+
+        // 1回制限スキルの使用フラグを立てる
+        if (myActor.skillsList) {
+            let sk = myActor.skillsList.find(s => s.name === sName);
+            if (sk && sk.oncePerMatch) sk.used = true;
+        }
     }
 
-    // ダメージ計算（基本攻撃力の±10%）
-    let dmg = Math.floor(myActor.p * (1 + (Math.random() * 0.2 - 0.1)));
-    if (dmg < 1) dmg = 1;
-    
-    target.curH = Math.max(0, target.curH - dmg);
-
-    let logMsg = `⚔️ ${myActor.name} の攻撃！ ${target.name} に ${dmg} のダメージ！`;
-
-    // 演出（もし既存の演出関数があれば呼び出し）
-    if (typeof showDamageNumber === 'function') showDamageNumber(target.id, dmg, 'normal');
-
-    // ターンの進行
+    // --- 3. ターンインデックスを次に進める ---
     state.turnIndex = (state.turnIndex + 1) % state.queue.length;
 
-    // サーバーへ送信
+    // --- 4. Firestore上の部屋データをまとめて更新（全画面にリアルタイム同期される） ---
     const roomRef = doc(db, "coop_rooms", window.currentCoopRoomId);
     await updateDoc(roomRef, {
         "battleState.party": state.party,
         "battleState.enemies": state.enemies,
         "battleState.turnIndex": state.turnIndex,
-        "battleState.log": arrayUnion(logMsg)
+        "battleState.log": arrayUnion(...logMsgs)
     });
 };
 
@@ -4397,15 +4589,50 @@ window.executeCoopEnemyTurn = async function(enemyId) {
     const enemy = state.enemies.find(e => e.id === enemyId);
     const alivePlayers = state.party.filter(p => p.curH > 0);
     
-    if (alivePlayers.length === 0) return;
+    if (alivePlayers.length === 0 || !enemy) return;
 
-    const target = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
-    let dmg = Math.floor(enemy.p * (1 + (Math.random() * 0.2 - 0.1)));
-    if (dmg < 1) dmg = 1;
+    let logMsgs = [];
 
-    target.curH = Math.max(0, target.curH - dmg);
-    let logMsg = `👹 ${enemy.name} の攻撃！ ${target.name} に ${dmg} のダメージ！`;
+    // 敵がスキル持ちの場合、40%の確率でスキルを発動
+    let useSkill = null;
+    if (enemy.skills && enemy.skills.length > 0 && Math.random() < 0.4) {
+        useSkill = enemy.skills[Math.floor(Math.random() * enemy.skills.length)];
+    }
 
+    if (useSkill) {
+        logMsgs.push(`⚠️ ${enemy.name}：【${useSkill.name}】を発動！`);
+        if (useSkill.type === 'aoe' || useSkill.target === 'all') {
+            alivePlayers.forEach(p => {
+                let dmg = useSkill.power;
+                if (p.defBuff) dmg = Math.max(1, Math.floor(dmg * (1 - p.defBuff)));
+                p.curH = Math.max(0, p.curH - dmg);
+                if (typeof showDamageNumber === 'function') showDamageNumber(p.id, dmg, 'normal');
+            });
+            logMsgs.push(`💥 パーティー全体が ${useSkill.power} のダメージを受けた！`);
+        } else {
+            const target = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
+            let dmg = useSkill.power;
+            if (target.defBuff) dmg = Math.max(1, Math.floor(dmg * (1 - target.defBuff)));
+            target.curH = Math.max(0, target.curH - dmg);
+            logMsgs.push(`💥 ${target.name} が ${dmg} のダメージを受けた！`);
+            if (typeof showDamageNumber === 'function') showDamageNumber(target.id, dmg, 'normal');
+        }
+    } else {
+        // 通常攻撃
+        const target = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
+        let dmg = Math.floor(enemy.p * (1 + (Math.random() * 0.2 - 0.1)));
+        if (target.defBuff) dmg = Math.max(1, Math.floor(dmg * (1 - target.defBuff)));
+        if (dmg < 1) dmg = 1;
+
+        target.curH = Math.max(0, target.curH - dmg);
+        logMsgs.push(`👹 ${enemy.name} の攻撃！ ${target.name} に ${dmg} のダメージ！`);
+        if (typeof showDamageNumber === 'function') showDamageNumber(target.id, dmg, 'normal');
+    }
+
+    // 敵のバフターン減少処理などがあればここでリセット
+    alivePlayers.forEach(p => { if(p.defBuff) p.defBuff = 0; });
+
+    // ターンを進める
     state.turnIndex = (state.turnIndex + 1) % state.queue.length;
 
     const roomRef = doc(db, "coop_rooms", window.currentCoopRoomId);
@@ -4413,10 +4640,10 @@ window.executeCoopEnemyTurn = async function(enemyId) {
         "battleState.party": state.party,
         "battleState.enemies": state.enemies,
         "battleState.turnIndex": state.turnIndex,
-        "battleState.log": arrayUnion(logMsg)
+        "battleState.log": arrayUnion(...logMsgs)
     });
 };
-
+        
 </script>
 </body>
 </html>
