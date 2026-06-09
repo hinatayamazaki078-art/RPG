@@ -3372,14 +3372,14 @@ window.updateCoopBattleUI = function() {
             // Firestoreのデータを無視して、デストロイヤーなら画像を指定する
             const displayImg = (e.name === "デストロイヤー") ? "デストロイヤー.png" : e.img;
             
-            // ボス（デストロイヤー）の場合はサイズを 150 に、それ以外（青鬼・赤鬼など）は 80 にする
+            // ボス（デストロイヤー）の場合はサイズを 150 に、それ以外は 80 にする
             const imgSize = (e.name === "デストロイヤー") ? "200" : "80";
             const nameSize = (e.name === "デストロイヤー") ? "16px" : "12px";
 
             return `
-            <div class="char-box enemy ${e.curH <= 0 ? 'dead' : ''}" id="coop-enemy-${e.id}" onclick="onUnitClick('${e.id}')" style="height: auto;">
-                <img src="${displayImg}" width="${imgSize}" style="object-fit:contain; display:block; margin:0 auto;">
-                <div style="font-size: ${nameSize}; font-weight: bold; color: #f33;">${e.name}</div>
+            <div class="char-box enemy ${e.curH <= 0 ? 'dead' : ''}" id="coop-enemy-${e.id}" onclick="onUnitClick('${e.id}')" style="height: auto; box-shadow: none; border: none;">
+                <img src="${displayImg}" width="${imgSize}" style="object-fit:contain; display:block; margin:0 auto; filter: none;">
+                <div style="font-size: ${nameSize}; font-weight: bold; color: #f33; margin-top: 5px;">${e.name}</div>
                 <div class="hp-bar-bg" style="margin-top: 3px;"><div class="hp-bar" style="width:${(e.curH/e.maxH)*100}%; background: #f00;"></div></div>
                 <div style="font-size: 11px;">HP: ${e.curH}/${e.maxH}</div>
             </div>`;
