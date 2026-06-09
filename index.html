@@ -4571,11 +4571,20 @@ window.executeCoopAction = async function(targetId, type, skillName = null) {
         }
     }
 
-    // --- 3. ターンインデックスを次に進める ---
-    state.turnIndex = (state.turnIndex + 1) % state.queue.length;
+    // --- 3. ターンインデックスを次に進める（HP0のキャラはスキップ） ---
+    let loopCount1 = 0;
+    do {
+        state.turnIndex = (state.turnIndex + 1) % state.queue.length;
+        let nextId = state.queue[state.turnIndex];
+        let nextUnit = [...state.party, ...state.enemies].find(u => u.id === nextId);
+        loopCount1++;
+        // 次のキャラが存在し、かつHPが0より大きいならループを抜ける（ターンを渡す）
+        if (nextUnit && nextUnit.curH > 0) break;
+    } while (loopCount1 < state.queue.length);
 
     // --- 4. Firestore上の部屋データをまとめて更新（全画面にリアルタイム同期される） ---
     const roomRef = doc(db, "coop_rooms", window.currentCoopRoomId);
+// （以下は元のコードのまま）
     await updateDoc(roomRef, {
         "battleState.party": state.party,
         "battleState.enemies": state.enemies,
@@ -4632,8 +4641,15 @@ window.executeCoopEnemyTurn = async function(enemyId) {
     // 敵のバフターン減少処理などがあればここでリセット
     alivePlayers.forEach(p => { if(p.defBuff) p.defBuff = 0; });
 
-    // ターンを進める
-    state.turnIndex = (state.turnIndex + 1) % state.queue.length;
+    // ターンを進める（HP0のキャラはスキップ）
+    let loopCount2 = 0;
+    do {
+        state.turnIndex = (state.turnIndex + 1) % state.queue.length;
+        let nextId = state.queue[state.turnIndex];
+        let nextUnit = [...state.party, ...state.enemies].find(u => u.id === nextId);
+        loopCount2++;
+        if (nextUnit && nextUnit.curH > 0) break;
+    } while (loopCount2 < state.queue.length);
 
     const roomRef = doc(db, "coop_rooms", window.currentCoopRoomId);
     await updateDoc(roomRef, {
