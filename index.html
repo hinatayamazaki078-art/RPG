@@ -3038,17 +3038,29 @@ function updateUI() {
         if (u.deathTrap) badgeHtml += '<span style="color:#a0a; font-size:10px;">[死]</span>';
         if (u.evasionBuff > 0) badgeHtml += '<span style="color:#0ff; font-size:10px;">[避↑]</span>';
         
+        // ▼▼▼ ここから変更 ▼▼▼
+        // imgプロパティがあればイラスト（と小さな名前）、なければ文字（漢字）を表示する
+        let displayContent = "";
+        if (u.img) {
+            displayContent = `
+                <img src="${u.img}" style="width: 50px; height: 50px; object-fit: contain; margin-bottom: 2px; filter: drop-shadow(0 0 5px rgba(255,255,255,0.3));">
+                <div style="font-size: 10px; color: #ff0; line-height: 1;">${u.name}</div>
+            `;
+        } else {
+            displayContent = `<div class="kanji ${auraClass}" style="font-size:28px; ${auraStyle}">${u.name}</div>`;
+        }
+        
         return `<div id="unit-box-${u.id}" class="${classes}" onclick="onUnitClick(${u.id})">
-    <div class="kanji ${auraClass}" style="font-size:28px; ${auraStyle}">${u.name}</div>
+            ${displayContent}
             <div class="hp-bar-bg"><div class="hp-bar-fill" style="width:${hpPct}%;"></div></div>
             <div class="stats-text">${statsStr}</div>
             <div style="height:12px; margin-top:2px;">${badgeHtml}</div>
         </div>`;
+        // ▲▲▲ ここまで変更 ▲▲▲
     };
     document.getElementById('player-area').innerHTML = party.map(draw).join('');
     document.getElementById('enemy-area').innerHTML = enemies.map(draw).join('');
 }
-
 // ▼ 追加：ダメージや回復の数字をポップアップ表示する関数
 function showDamageNumber(targetId, amount, type = 'normal') {
     const targetEl = document.getElementById(`unit-box-${targetId}`);
