@@ -3372,8 +3372,8 @@ window.updateCoopBattleUI = function() {
             // Firestoreのデータを無視して、デストロイヤーなら画像を指定する
             const displayImg = (e.name === "デストロイヤー") ? "デストロイヤー.png" : e.img;
             
-            // ★ボス（デストロイヤー）の場合はサイズを 150 に、それ以外（青鬼・赤鬼など）は 80 にする
-            const imgSize = (e.name === "デストロイヤー") ? "150" : "80";
+            // ボス（デストロイヤー）の場合はサイズを 150 に、それ以外（青鬼・赤鬼など）は 80 にする
+            const imgSize = (e.name === "デストロイヤー") ? "200" : "80";
             const nameSize = (e.name === "デストロイヤー") ? "16px" : "12px";
 
             return `
