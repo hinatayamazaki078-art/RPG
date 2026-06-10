@@ -4202,16 +4202,28 @@ window.checkCoopTurn = function() {
 
     // --- 既存の checkCoopTurn の一部を書き換え ---
     if (currentActorId === myLeaderId) {
-        document.getElementById('battle-controls').style.display = 'grid';
-        document.getElementById('btn-atk').onclick = () => window.startCoopTargetSelection('attack');
-        // ▼ ここを書き換え：アラートを消して専用メニューを開く関数を呼ぶ
-        document.getElementById('btn-skl').onclick = () => window.showCoopSkillMenu();
-    } else {
+            document.getElementById('battle-controls').style.display = 'grid';
+            document.getElementById('btn-atk').onclick = () => window.startCoopTargetSelection('attack');
+            // ▼ ここを書き換え：アラートを消して専用メニューを開く関数を呼ぶ
+            document.getElementById('btn-skl').onclick = () => window.showCoopSkillMenu();
+        } else {
+            // 自分以外のターンの場合はボタンを隠す
+            document.getElementById('battle-controls').style.display = 'none';
+        }
+
+        // 敵ターンの自動進行（ホストのみ計算）
+        const isEnemyTurn = state.enemies.some(e => e.id === currentActorId);
+        if (isEnemyTurn && window.isCoopHost) {
+            setTimeout(() => {
+                window.executeCoopEnemyTurn(currentActorId);
+            }, 1500);
+        }
+    }; // ← ★重要！ここで関数をしっかり閉じます
+
 // ----------------------------------------------
 
 // ▼ ここから新規追加 ▼
 window.coopSelectedSkill = null;
-
 window.showCoopSkillMenu = function() {
     const state = window.coopBattleState;
     const myActorId = state.queue[state.turnIndex];
