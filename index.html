@@ -1204,6 +1204,19 @@ function gainPlayerExp(amount) {
     
     updatePlayerLevelUI();
     saveData();
+
+    // ★【ここを追加】魔境探索「枯れ木の森」のボス討伐時のドロップ判定
+    if (typeof isMakyouMode !== 'undefined' && isMakyouMode && currentMakyouArea === "枯れ木の森" && currentMakyouStageIndex === 3) {
+        // 3%の確率でドロップ判定
+        if (Math.random() < 0.03) {
+            accessories.push("深淵の指輪");
+            saveData();
+            alert("✨奇跡が起きた！ボスから『深淵の指輪』がドロップした！！！");
+        } else {
+            alert("枯れ木の森の最深部をクリアした！（指輪はドロップしなかった…）");
+        }
+        isMakyouMode = false; // 魔境モード終了
+    }
     
     if (leveledUp) {
         // 戦闘画面が開いていればログに、そうでなければアラートで通知
@@ -3341,6 +3354,47 @@ function closeMakyouSelection() {
     document.getElementById('view-home').classList.add('active'); 
 }
 
+// --- 魔境探索のデータ ---
+const makyouData = {
+    "枯れ木の森": [
+        // 第1ステージ
+        { name: "枯れ木の森 - 壱", enemies: [
+            { name: "迷い木", h: 400, p: 20, s: 10, m: 0, exp: 50 }, 
+            { name: "怨霊", h: 300, p: 30, s: 15, m: 0, exp: 50 }
+        ]},
+        // 第2ステージ
+        { name: "枯れ木の森 - 弐", enemies: [
+            { name: "腐食茸", h: 500, p: 35, s: 12, m: 0, exp: 80 }, 
+            { name: "人喰い鴉", h: 250, p: 45, s: 25, m: 0, exp: 80 }
+        ]},
+        // 第3ステージ
+        { name: "枯れ木の森 - 参", enemies: [
+            { name: "呪いの古樹", h: 800, p: 40, s: 10, m: 0, exp: 120 }, 
+            { name: "彷徨う骸", h: 600, p: 50, s: 20, m: 0, exp: 120 }
+        ]},
+        // ボスステージ（邪鬼）
+        { name: "枯れ木の森 - 最深部", enemies: [
+            { name: "邪鬼", h: 1200, p: 50, s: 15, m: 80, exp: 500, isBoss: true } // MPを80に調整
+        ]}
+    ]
+};
+
+let currentMakyouArea = "";
+let currentMakyouStageIndex = 0;
+let isMakyouMode = false; // 魔境モード中かどうかを判定するフラグ
+
+function startMakyou(areaName) {
+    if (selectedIds.length === 0) return alert("メンバーを選んでください");
+    currentMakyouArea = areaName;
+    currentMakyouStageIndex = 0;
+    isMakyouMode = true;
+    closeMakyouSelection();
+    
+    // ※ここに既存の「戦闘画面を開く関数（例：startBattle や initStage など）」を呼び出す処理が入ります
+    // 例: setupBattle(makyouData[currentMakyouArea][currentMakyouStageIndex]);
+    alert(`${areaName} の探索を開始します！`); // 一時的な動作確認用
+}
+
 function openAccessoryInventory() {
     const char = box.find(b => b.id === shopTargetId);
     if (!char) return;
@@ -4738,6 +4792,35 @@ window.executeCoopEnemyTurn = async function(enemyId) {
             target.curH = Math.max(0, target.curH - dmg);
             logMsgs.push(`💥 ${target.name} が ${dmg} のダメージを受けた！`);
             if (typeof showDamageNumber === 'function') showDamageNumber(target.id, dmg, 'normal');
+        }
+    } else {
+       } else if (enemy.name === "邪鬼") {
+        // ★ 魔境ボス「邪鬼」の確定2回行動ロジック
+        for (let i = 0; i < 2; i++) {
+            const alivePlayersLoop = state.party.filter(p => p.curH > 0);
+            if (alivePlayersLoop.length === 0 || enemy.curH <= 0) break; // 全滅か自分が倒れたらストップ
+
+            // MPが10以上あれば50%の確率で全体攻撃スキル「煉獄ノ炎」
+            if (enemy.curM >= 10 && Math.random() < 0.5) {
+                enemy.curM -= 10;
+                logMsgs.push(`🔥 邪鬼の行動(${i+1}/2): 技「煉獄ノ炎」！`);
+                alivePlayersLoop.forEach(target => {
+                    let dmg = 40; // 全体に40ダメージ
+                    target.curH = Math.max(0, target.curH - dmg);
+                    logMsgs.push(`  → ${target.name} は 40 のダメージを受けた！`);
+                    if (typeof showDamageNumber === 'function') showDamageNumber(target.id, dmg, 'normal');
+                });
+            } else {
+                // 通常攻撃
+                const target = alivePlayersLoop[Math.floor(Math.random() * alivePlayersLoop.length)];
+                let dmg = Math.floor(enemy.p * (1 + (Math.random() * 0.2 - 0.1)));
+                if (target.defBuff) dmg = Math.max(1, Math.floor(dmg * (1 - target.defBuff)));
+                if (dmg < 1) dmg = 1;
+
+                target.curH = Math.max(0, target.curH - dmg);
+                logMsgs.push(`👹 邪鬼の行動(${i+1}/2): 通常攻撃！ ${target.name} に ${dmg} のダメージ！`);
+                if (typeof showDamageNumber === 'function') showDamageNumber(target.id, dmg, 'normal');
+            }
         }
     } else {
         // 通常攻撃
