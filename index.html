@@ -4365,13 +4365,16 @@ window.startCoopBattleHost = async function() {
     const roomData = docSnap.data();
     const boss = window.coopBosses[window.currentCoopBossId];
 
+    // ▼▼▼ IDを文字(e1)から数字(8001など)に変更 ▼▼▼
     let enemiesData = [
-        { id: "e1", name: "青鬼", p: 15, h: 200, maxH: 200, s: 10, m: 0, isP: false, curH: 200 },
-        { id: "e2", name: boss.name, img: boss.img, p: boss.P, h: boss.H, maxH: boss.maxH, s: boss.S, m: boss.M, isP: false, curH: boss.maxH },
-        { id: "e3", name: "赤鬼", p: 20, h: 180, maxH: 180, s: 12, m: 0, isP: false, curH: 180 }
+        { id: 8001, name: "青鬼", p: 15, h: 200, maxH: 200, s: 10, m: 0, isP: false, curH: 200 },
+        { id: 8002, name: boss.name, img: boss.img, p: boss.P, h: boss.H, maxH: boss.maxH, s: boss.S, m: boss.M, isP: false, curH: boss.maxH },
+        { id: 8003, name: "赤鬼", p: 20, h: 180, maxH: 180, s: 12, m: 0, isP: false, curH: 180 }
     ];
+    // ▲▲▲ ここまで ▲▲▲
 
     let partyData = roomData.members.map((m) => ({
+// ...(以下そのまま)...
         ...m,
         isP: true,
         curH: m.h,
@@ -4414,6 +4417,12 @@ window.initCoopBattle = function() {
             window.coopBattleState = data.battleState;
             party = data.battleState.party;
             enemies = data.battleState.enemies;
+
+            // ▼▼▼ ここを追加してターン順とUIのハイライトを同期 ▼▼▼
+            qIdx = data.battleState.turnIndex;
+            queue = data.battleState.queue.map(qid => [...party, ...enemies].find(u => u.id === qid)).filter(Boolean);
+            document.getElementById('turn-order').innerText = queue.map(u => u.name).join(" > ");
+            // ▲▲▲ ここまで ▲▲▲
 
             const logDiv = document.getElementById('log');
             logDiv.innerHTML = data.battleState.log.map(msg => `<div>${msg}</div>`).join('');
