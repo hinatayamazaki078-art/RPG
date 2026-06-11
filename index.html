@@ -3072,8 +3072,10 @@ else if (isMakyouMode) {
             
         else if (isShadowMode) {
             addLog(`他者の影との手合わせが終了した！`);
+            isShadowMode = false;
             saveData();
             setTimeout(() => returnToHome(), 2000);
+            return;
         }
         else if (isBossMode) {
             addLog("強者を退けた！"); 
