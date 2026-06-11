@@ -1378,12 +1378,12 @@ function getNextLvExp(currentLv) {
 
 // ユニットの経験値を獲得し、レベルアップ判定を行う関数
 function gainUnitExp(unit, amount) {
-    if (unit.lv >= 99) return; // 最大レベルなら何もしない
+    if (unit.lv >= 300) return; // 最大レベルなら何もしない
 
     unit.exp += amount;
 
     // レベルアップのループ（一気に複数レベル上がる場合を考慮）
-    while (unit.lv < 99 && unit.exp >= getNextLvExp(unit.lv)) {
+    while (unit.lv < 300 && unit.exp >= getNextLvExp(unit.lv)) {
         unit.exp -= getNextLvExp(unit.lv);
         unit.lv++;
 
