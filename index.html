@@ -1215,7 +1215,6 @@ function gainPlayerExp(amount) {
         } else {
             alert("枯れ木の森の最深部をクリアした！（指輪はドロップしなかった…）");
         }
-        isMakyouMode = false; // 魔境モード終了
     }
     
     if (leveledUp) {
@@ -3054,6 +3053,23 @@ function closeGugenkaModal() {
             window.claimShadowKing(); // 玉座奪取処理を呼び出す
             return;
         }
+
+else if (isMakyouMode) {
+            currentMakyouStageIndex++;
+            if (currentMakyouStageIndex < makyouData[currentMakyouArea].length) {
+                // 次のステージ（弐、参など）へ進む
+                addLog(`さらに奥深くへと進む...`);
+                setTimeout(initMakyouBattle, 1500);
+            } else {
+                // ボス討伐後（拠点に帰る）
+                addLog(`【${currentMakyouArea}】を完全踏破した！`);
+                isMakyouMode = false; // ここで終了フラグを立てる
+                saveData();
+                setTimeout(() => returnToHome(), 2500);
+            }
+            return;
+        }
+            
         else if (isShadowMode) {
             addLog(`他者の影との手合わせが終了した！`);
             saveData();
@@ -3388,11 +3404,45 @@ function startMakyou(areaName) {
     currentMakyouArea = areaName;
     currentMakyouStageIndex = 0;
     isMakyouMode = true;
-    closeMakyouSelection();
-    
-    // ※ここに既存の「戦闘画面を開く関数（例：startBattle や initStage など）」を呼び出す処理が入ります
-    // 例: setupBattle(makyouData[currentMakyouArea][currentMakyouStageIndex]);
-    alert(`${areaName} の探索を開始します！`); // 一時的な動作確認用
+
+    // 画面を戦闘領域に切り替え
+    document.getElementById('view-makyou-select').classList.remove('active');
+    document.getElementById('view-battle').classList.add('active');
+    document.getElementById('btn-retreat').style.display = "block";
+
+    // 魔境用の戦闘セットアップを呼び出す
+    initMakyouBattle();
+}
+
+// ▼新しく追加する関数▼
+function initMakyouBattle() {
+    // 他のモードのフラグをオフにする
+    isBossMode = false; isDigMode = false; isShadowMode = false; isShadowKingMode = false;
+    remainingActions = 0; darumaTrigger = null; isGlobalDomination = false;
+
+    const stageData = makyouData[currentMakyouArea][currentMakyouStageIndex];
+    document.getElementById('header-stage-label').innerText = stageData.name;
+
+    // 味方のセットアップ
+    party = setupBattleData(selectedIds.map(sid => box.find(b => b.id === sid)), true);
+
+    // 魔境の敵データを標準フォーマットに変換
+    let enemyDataList = stageData.enemies.map((e, idx) => {
+        return {
+            ...e,
+            id: 600 + idx,
+            maxH: e.h, curH: e.h,
+            maxM: e.m, curM: e.m,
+            baseP: e.p, baseS: e.s,
+            r: 1, // エラー回避のダミー値
+            isP: false
+        };
+    });
+    enemies = setupBattleData(enemyDataList, false);
+
+    document.getElementById('log').innerText = "";
+    addLog(`--- 魔境探索：【 ${stageData.name} 】 ---`);
+    cycle();
 }
 
 function openAccessoryInventory() {
