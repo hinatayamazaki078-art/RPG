@@ -806,6 +806,17 @@
         <button onclick="window.leaveCoopRoom()" style="height:45px; margin-top:15px;">退出して拠点に戻る</button>
     </div>
     </div> <script>
+
+function changeBGM(musicFileName) {
+    const bgm = document.getElementById('game-bgm');
+    // 現在流れている曲と違う場合のみ切り替える
+    if (bgm && !bgm.src.includes(musicFileName)) {
+        bgm.pause();
+        bgm.src = musicFileName;
+        bgm.play().catch(e => console.log("BGMの再生がブロックされました:", e));
+    }
+}
+        
 document.body.addEventListener('click', function() {
     const bgm = document.getElementById('game-bgm');
     if (bgm && bgm.paused) {
@@ -819,7 +830,8 @@ document.body.addEventListener('click', function() {
     function returnToHome() {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById('view-home').classList.add('active');
-    
+
+        changeBGM("MusMus-BGM-157.mp3");
     // ボタンや案内人の非表示処理
     const btnRetreat = document.getElementById('btn-retreat');
     if (btnRetreat) btnRetreat.style.display = "none";
@@ -3993,6 +4005,7 @@ window.leaveCoopRoom = async function(force = false) {
     
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById('view-home').classList.add('active');
+    changeBGM("MusMus-BGM-157.mp3");
 };
 
 // ==========================================
@@ -4200,6 +4213,7 @@ window.initCoopBattle = function() {
     document.getElementById('view-battle').classList.add('active');
     document.getElementById('btn-retreat').style.display = "none"; 
     document.getElementById('header-stage-label').innerText = `共闘作戦 討伐戦`;
+    changeBGM("MusMus-BGM-095.mp3");
 
     const roomRef = doc(db, "coop_rooms", window.currentCoopRoomId);
 
