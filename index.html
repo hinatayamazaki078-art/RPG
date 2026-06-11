@@ -3420,6 +3420,9 @@ function initMakyouBattle() {
     isBossMode = false; isDigMode = false; isShadowMode = false; isShadowKingMode = false;
     remainingActions = 0; darumaTrigger = null; isGlobalDomination = false;
 
+    // ★ ここに魔境探索用のBGM再生処理を追加 ★
+    changeBGM("MusMus-BGM-112.mp3");
+
     const stageData = makyouData[currentMakyouArea][currentMakyouStageIndex];
     document.getElementById('header-stage-label').innerText = stageData.name;
 
