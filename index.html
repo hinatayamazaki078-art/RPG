@@ -4793,8 +4793,7 @@ window.executeCoopEnemyTurn = async function(enemyId) {
             logMsgs.push(`💥 ${target.name} が ${dmg} のダメージを受けた！`);
             if (typeof showDamageNumber === 'function') showDamageNumber(target.id, dmg, 'normal');
         }
-    } else {
-       } else if (enemy.name === "邪鬼") {
+    } else if (enemy.name === "邪鬼") {
         // ★ 魔境ボス「邪鬼」の確定2回行動ロジック
         for (let i = 0; i < 2; i++) {
             const alivePlayersLoop = state.party.filter(p => p.curH > 0);
