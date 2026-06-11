@@ -560,6 +560,7 @@
             <button style="grid-column: span 2; background: #300; border-color: #f00; color: #f88; font-size: 12px;" onclick="deleteMyShadow()">影を削除</button>
             
             <button style="grid-column: span 4; background: #500; border-color: #f00; color: #ff0; font-size: 15px; font-weight: bold; text-shadow: 0 0 5px #f00;" onclick="openShadowKing()">👑 影ノ支配（玉座）に挑む</button>
+            <button style="grid-column: span 4; background: #400; border-color: #a00; color: #fff; font-size: 15px; font-weight: bold; text-shadow: 0 0 5px #a00;" onclick="openMakyouSelection()">🌲 魔境探索</button>
             <button id="btn-start" style="grid-column: span 4;" onclick="openStageSelection()">戦場出撃</button>
         </div>
     </div>
@@ -643,6 +644,19 @@
         <h2 style="color:#f00;">強者の間</h2>
         <div id="boss-list" class="box-list" style="grid-template-columns: 1fr; max-height: 480px; overflow-y: auto;"></div>
         <button onclick="closeBossSelection()" style="height:50px; margin-top:10px;">拠点に戻る</button>
+    </div>
+
+    <div id="view-makyou-select" class="view">
+        <h2 style="color:#a00;">魔境探索</h2>
+        <div class="guide-text" style="margin-bottom: 15px;">※難易度高。最深部には恐るべきボスが待ち受ける…。</div>
+        <div style="display: flex; flex-direction: column;">
+            <button class="stage-select-btn" onclick="startMakyou('枯れ木の森')" style="border-color:#aa0;">枯れ木の森 <span class="clear-text" style="color:#ff0;">▶ 挑戦可能</span></button>
+            <button class="stage-select-btn locked" disabled>朽ちた館 <span class="lock-text">🔒 未解放</span></button>
+            <button class="stage-select-btn locked" disabled>血塗られた洞窟 <span class="lock-text">🔒 未解放</span></button>
+            <button class="stage-select-btn locked" disabled>果てない深海 <span class="lock-text">🔒 未解放</span></button>
+            <button class="stage-select-btn locked" disabled>闇の輪廻 <span class="lock-text">🔒 未解放</span></button>
+        </div>
+        <button onclick="closeMakyouSelection()" style="height:45px; margin-top:15px;">拠点に戻る</button>
     </div>
 
     <div id="view-dig-select" class="view">
@@ -1097,7 +1111,11 @@ const digDataList = [
     { tier: 5, name: '極宝', h: 1250000, wp: '錆びた剣', stoneChance: 0.2, stoneCount: 10 }
 ];
 
-const weaponUpgradeSpecs = [
+const accessoriesData = {
+    "深淵の指輪": { name: "深淵の指輪", p: 5, h: 5, s: 5, m: 5 }
+};
+        
+        const weaponUpgradeSpecs = [
     { name: "鉄の剣", nextName: "鉄の剣+1", rate: 80, pBonus: 3 },
     { name: "鉄の剣+1", nextName: "鉄の剣+2", rate: 50, pBonus: 4 },
     { name: "鉄の剣+2", nextName: "鉄の剣+3", rate: 25, pBonus: 5 },
@@ -1132,7 +1150,7 @@ function getBossHpMultiplier(name) {
     if (name === '不死鳥') return 20; if (name === '天照') return 30; return 3;
 }
 
-let coins = 0, stones = 0, box = [], selectedIds = [], seeds = [], auras = [], weapons = [], shopTargetId = null;
+let coins = 0, stones = 0, box = [], selectedIds = [], seeds = [], auras = [], weapons = [], accessories = [], shopTargetId = null;
 let isFirstGachaFree = true; 
 let isBossMode = false, currentBossName = null;
 let isDigMode = false, currentDigTier = 0; 
@@ -1291,8 +1309,8 @@ function saveData() {
     localStorage.setItem('kanji_rpg_v2_data', JSON.stringify({ 
         coins, stones, box, selectedIds, seeds, auras, weapons, maxClearedStage, 
         isFirstGachaFree, playerName, playerLevel, playerExp, playerIcon, ownedIcons
-        ,crystals
-    })); 
+        ,crystals, accessories
+    }));
 }
 
 function loadData() {
@@ -1307,7 +1325,7 @@ function loadData() {
         });
         coins = d.coins || 0; stones = d.stones || 0;
         selectedIds = (d.selectedIds || []).filter(sid => box.some(b => b.id === sid));
-        seeds = d.seeds || []; auras = d.auras || []; weapons = d.weapons || []; 
+        seeds = d.seeds || []; auras = d.auras || []; weapons = d.weapons || []; accessories = d.accessories || [];
         maxClearedStage = d.maxClearedStage || 0; 
         isFirstGachaFree = d.isFirstGachaFree !== undefined ? d.isFirstGachaFree : true;
         
@@ -2432,6 +2450,14 @@ function setupBattleData(arr, isP) {
             wpBonus = getWeaponBonus(wp.name);
             if (wp.name === "真・グレイデンの剣") hasTrueGreyden = true;
         }
+
+        let accP = 0, accH = 0, accS = 0, accM = 0;
+        if (isP && c.accessory && accessoriesData[c.accessory]) {
+            accP = accessoriesData[c.accessory].p;
+            accH = accessoriesData[c.accessory].h;
+            accS = accessoriesData[c.accessory].s;
+            accM = accessoriesData[c.accessory].m;
+        }
         
         let activeAuras = [];
         if (isP && c.auraIds) {
@@ -2449,7 +2475,7 @@ function setupBattleData(arr, isP) {
         }
 
         return {
-            ...c, curH: c.h, maxH: c.h, curM: c.m, maxM: c.m, p: c.p + wpBonus, baseP: c.p + wpBonus, baseS: c.s, 
+            ...c, curH: c.h + accH, maxH: c.h + accH, curM: c.m + accM, maxM: c.m + accM, p: c.p + wpBonus + accP, baseP: c.p + wpBonus + accP, baseS: c.s + accS,
             isP: isP, poison: false, guard: false, charm: 0, lastDmg: 0, 
             auras: activeAuras, skillsList: activeSkills, 
             usedPhoenix: false, blind: 0, paralyze: 0, atkBuff: 0, invincible: 0, deathTrap: false,
@@ -3305,12 +3331,44 @@ function applyGiftCode() {
     }
 }
     
+function openMakyouSelection() {
+    if (selectedIds.length === 0) return alert("メンバーを選んでください");
+    document.getElementById('view-home').classList.remove('active'); 
+    document.getElementById('view-makyou-select').classList.add('active');
+}
+function closeMakyouSelection() { 
+    document.getElementById('view-makyou-select').classList.remove('active'); 
+    document.getElementById('view-home').classList.add('active'); 
+}
+
 function openAccessoryInventory() {
-    // 後の実装ではここに「アクセサリー一覧UIを開く」処理を書きます
+    const char = box.find(b => b.id === shopTargetId);
+    if (!char) return;
+
+    if (accessories.length === 0) {
+        alert("装備できる装飾品を持っていません。\n（魔境探索などで入手できます）");
+        return;
+    }
+
+    // 簡易的に入力欄で装備変更させる処理
+    let accList = accessories.map((acc, index) => `${index}: ${acc}`).join('\n');
+    let input = prompt(`装備する装飾品の番号を半角数字で入力してください。\n外す場合は「外す」と入力してください。\n\n【所持している装飾品】\n${accList}`);
     
-    // 現在は未実装のためメッセージのみ表示
-    showSystemMessage("アクセサリー機能は現在準備中です。"); 
-    // ※showSystemMessage は既存の通知UI関数（alertなどでも可）に置き換えてください
+    if (input === "外す") {
+        char.accessory = null;
+        saveData();
+        updateShopUI();
+        alert("装飾品を外しました。");
+        return;
+    }
+
+    let idx = parseInt(input);
+    if (!isNaN(idx) && idx >= 0 && idx < accessories.length) {
+        char.accessory = accessories[idx];
+        saveData();
+        updateShopUI();
+        alert(`${accessories[idx]} を装備しました！`);
+    }
 }
         
         function addLog(msg) {
