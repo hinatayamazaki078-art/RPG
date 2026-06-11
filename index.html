@@ -2176,7 +2176,7 @@ window.handleDragEnd = function(e) {
     
     let skillText = (char.skills && char.skills.length > 0) ? char.skills.map(s => `【${s.name}】`).join(' ') : 'なし';
     // ▼ getUnitNextExp を getNextLvExp に修正 ▼
-    const expText = char.lv >= 99 ? "MAX" : `${char.exp} / ${getNextLvExp(char.lv)}`;
+    const expText = char.lv >= 300 ? "MAX" : `${char.exp} / ${getNextLvExp(char.lv)}`;
     document.getElementById('shop-unit-detail').innerHTML = `
         <span class="kanji" style="font-size:${char.name.length >= 4 ? '35px' : '55px'};">${char.name} 
             <span style="font-size:20px; color:#ff0;">Lv.${char.lv || 1}</span>
@@ -4048,25 +4048,47 @@ window.renderCoopBossList = function() {
 window.fetchCoopRooms = async function(bossId) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById('coop-room-list-view').classList.add('active');
-    
     const container = document.getElementById('coop-rooms-container');
     container.innerHTML = '<div style="color:#ff0; text-align:center;">読み込み中...</div>';
     try {
         const q = query(collection(db, "coop_rooms"), where("bossId", "==", bossId), where("status", "==", "waiting"));
         const snap = await getDocs(q);
         container.innerHTML = '';
-        if (snap.empty) {
-            container.innerHTML = '<div style="color:#aaa; text-align:center;">募集中のパーティーはありません。</div>';
-            return;
-        }
+        
+        let activeRoomsCount = 0; // 有効な部屋の数をカウント
+
         snap.forEach(docSnap => {
             const data = docSnap.data();
+
+            // ▼▼▼ ゴースト部屋の自動お掃除処理 ▼▼▼
+            if (data.createdAt) {
+                const now = new Date();
+                const roomDate = data.createdAt.toDate();
+                const diffMinutes = (now - roomDate) / (1000 * 60);
+                
+                // 作成から30分以上経過している部屋は「古い（ゴースト）」と判定
+                if (diffMinutes > 30) {
+                    // 古い部屋は表示せず、サーバー（Firestore）からも自動削除
+                    deleteDoc(doc(db, "coop_rooms", docSnap.id)).catch(e => console.error("お掃除エラー", e));
+                    return; // 次の部屋の処理へスキップ
+                }
+            }
+            // ▲▲▲ ここまで ▲▲▲
+
+            activeRoomsCount++; // 有効な部屋があったのでカウントアップ
+
             const btn = document.createElement('button');
             btn.className = "stage-select-btn";
             btn.innerHTML = `${data.hostName} のパーティー <span style="color:#0ff; font-size:12px;">(${data.members.length}/4人)</span>`;
             btn.onclick = () => window.joinCoopRoom(docSnap.id, data);
             container.appendChild(btn);
         });
+
+        // 部屋がゼロだった場合の表示（お掃除された結果ゼロになった場合も含む）
+        if (activeRoomsCount === 0) {
+            container.innerHTML = '<div style="color:#aaa; text-align:center;">募集中のパーティーはありません。</div>';
+        }
+
     } catch (e) {
         console.error("ルーム取得エラー", e);
         container.innerHTML = '<div style="color:#f00; text-align:center;">エラーが発生しました。</div>';
