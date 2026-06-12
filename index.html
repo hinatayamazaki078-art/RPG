@@ -1358,6 +1358,8 @@ function saveData() {
     normalizeBoxData();
     const playerName = document.getElementById('player-name').innerText;
     // playerIcon と ownedIcons を追加
+    localStorage.setItem('kanji_rpg_v2_relics_inv', JSON.stringify(relicsInventory));
+localStorage.setItem('kanji_rpg_v2_relics_eq', JSON.stringify(equippedRelics));
     localStorage.setItem('kanji_rpg_v2_data', JSON.stringify({ 
         coins, stones, box, selectedIds, seeds, auras, weapons, maxClearedStage, 
         isFirstGachaFree, playerName, playerLevel, playerExp, playerIcon, ownedIcons
@@ -1370,6 +1372,8 @@ function loadData() {
     const saved = localStorage.getItem('kanji_rpg_v2_data');
     if (saved) {
         const d = JSON.parse(saved);
+        if(localStorage.getItem('kanji_rpg_v2_relics_inv')) relicsInventory = JSON.parse(localStorage.getItem('kanji_rpg_v2_relics_inv'));
+if(localStorage.getItem('kanji_rpg_v2_relics_eq')) equippedRelics = JSON.parse(localStorage.getItem('kanji_rpg_v2_relics_eq'));
         box = (d.box || []).filter(c => c && c.name);
         // 既存キャラにレベルと経験値を付与（追加分）
         box.forEach(u => {
@@ -3050,29 +3054,32 @@ function closeRelicView() {
 }
 
 // 枠組み用ダミー関数（第2弾・第3弾で中身を作ります）
+// ▼▼ 【第3弾修正】タブ切り替えに対応した、遺物調査（贄の儀）画面を描画する関数 ▼▼
 function renderRelicSacrificeUI() {
     const container = document.getElementById('relic-content-area');
-    let html = `<div style="text-align:center; margin-bottom:10px; font-size:12px; color:#ff0;">贄にする漢字を選んでください（Lv30以上のみ表示）</div>`;
     
-    // Lv30以上のキャラだけを抽出
+    // 上部に画面切り替え用のタブボタンを配置
+    let html = `
+    <div style="display:flex; gap:6px; margin-bottom:12px;">
+        <button onclick="renderRelicSacrificeUI()" style="flex:1; background:#333; border:1px solid #ff0; color:#ff0; font-size:12px; padding:6px; cursor:pointer; font-family:inherit;">☠ 贄の儀 (生成)</button>
+        <button onclick="renderRelicEquipUI()" style="flex:1; background:#111; border:1px solid #444; color:#aaa; font-size:12px; padding:6px; cursor:pointer; font-family:inherit;">🛡 遺物装備</button>
+    </div>
+    <div style="text-align:center; margin-bottom:10px; font-size:11px; color:#ff0;">贄にする漢字を選んでください（Lv30以上のみ表示）</div>`;
+    
     const eligibleChars = box.filter(b => b.lv >= 30);
     
     if (eligibleChars.length === 0) {
-        html += `<div style="text-align:center; color:#888; padding:20px;">条件を満たす（Lv30以上の）漢字がいません...</div>`;
+        html += `<div style="text-align:center; color:#888; padding:20px; font-size:12px;">条件を満たす（Lv30以上の）漢字がいません...</div>`;
         container.innerHTML = html;
         return;
     }
 
     html += `<div style="display:flex; flex-direction:column; gap:8px;">`;
-    
-    // 条件を満たすキャラごとに枠を作る
     eligibleChars.forEach(c => {
         let buttonsHtml = "";
-        
-        // そのキャラのレベルで作れる遺物のボタンを並べる
         RELIC_TIERS.forEach(tier => {
             if (c.lv >= tier.reqLv) {
-                buttonsHtml += `<button onclick="executeSacrifice(${c.id}, '${tier.name}')" style="font-size:10px; padding:4px 8px; background:#111; border:1px solid ${tier.color}; color:${tier.color}; margin-right:4px; margin-top:4px; cursor:pointer;">${tier.name}</button>`;
+                buttonsHtml += `<button onclick="executeSacrifice(${c.id}, '${tier.name}')" style="font-size:10px; padding:4px 8px; background:#111; border:1px solid ${tier.color}; color:${tier.color}; margin-right:4px; margin-top:4px; cursor:pointer; font-family:inherit;">${tier.name}</button>`;
             }
         });
 
@@ -3087,6 +3094,100 @@ function renderRelicSacrificeUI() {
     
     html += `</div>`;
     container.innerHTML = html;
+}
+
+// ▼▼ 【第3弾新規】遺物の装備・付け外し画面を描画する関数 ▼▼
+function renderRelicEquipUI() {
+    const container = document.getElementById('relic-content-area');
+    
+    // タブボタン（遺物装備側をアクティブに表示）
+    let html = `
+    <div style="display:flex; gap:6px; margin-bottom:12px;">
+        <button onclick="renderRelicSacrificeUI()" style="flex:1; background:#111; border:1px solid #444; color:#aaa; font-size:12px; padding:6px; cursor:pointer; font-family:inherit;">☠ 贄の儀 (生成)</button>
+        <button onclick="renderRelicEquipUI()" style="flex:1; background:#333; border:1px solid #0ff; color:#0ff; font-size:12px; padding:6px; cursor:pointer; font-family:inherit;">🛡 遺物装備</button>
+    </div>`;
+
+    // --- ① 装備中の遺物スロット一覧を表示 ---
+    html += `<div style="font-size:12px; color:#0ff; margin-bottom:6px; font-weight:bold; text-align:left;">【現在の装備状況（各最大5個 / タップで解除）】</div>`;
+    html += `<div style="display:flex; flex-direction:column; gap:6px; margin-bottom:15px;">`;
+    
+    RELIC_TIERS.forEach(tier => {
+        const equippedList = equippedRelics[tier.name] || [];
+        html += `
+        <div style="border:1px solid #333; background:#050505; padding:6px; border-radius:4px;">
+            <div style="font-size:11px; color:${tier.color}; margin-bottom:4px; font-weight:bold; text-align:left;">${tier.name} (${equippedList.length}/5)</div>
+            <div style="display:flex; flex-wrap:wrap; gap:4px;">`;
+            
+        if (equippedList.length === 0) {
+            html += `<span style="font-size:10px; color:#444; padding:2px;">未装備</span>`;
+        } else {
+            equippedList.forEach((relic, idx) => {
+                html += `
+                <div onclick="unequipRelic('${tier.name}', ${idx})" style="font-size:9px; background:#151515; border:1px solid ${tier.color}; color:#fff; padding:3px 6px; cursor:pointer; border-radius:2px;" title="クリックで装備解除">
+                    P:${relic.p} H:${relic.h} M:${relic.m} S:${relic.s}
+                </div>`;
+            });
+        }
+        html += `</div></div>`;
+    });
+    html += `</div>`;
+
+    // --- ② 所持している未装備の遺物一覧を表示 ---
+    html += `<div style="font-size:12px; color:#ff0; margin-bottom:6px; font-weight:bold; text-align:left;">【保管中の遺物（タップで装備）】</div>`;
+    
+    if (relicsInventory.length === 0) {
+        html += `<div style="text-align:center; color:#555; padding:15px; font-size:11px; border:1px dashed #333;">保管中の遺物はありません。漢字を犠牲にして生成してください。</div>`;
+    } else {
+        html += `<div style="display:flex; flex-direction:column; gap:5px; max-height:220px; overflow-y:auto; padding-right:2px;">`;
+        relicsInventory.forEach(relic => {
+            const tier = RELIC_TIERS.find(t => t.name === relic.name) || { color: "#fff" };
+            html += `
+            <div onclick="equipRelic(${relic.id})" style="border:1px solid #444; background:#111; padding:6px; border-radius:4px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition:0.2s;" onmouseover="this.style.borderColor='${tier.color}'" onmouseout='this.style.borderColor="#444"'>
+                <span style="font-size:12px; color:${tier.color}; font-weight:bold;">${relic.name}</span>
+                <span style="font-size:10px; color:#ccc; font-family:monospace;">P:${relic.p} | H:${relic.h} | M:${relic.m} | S:${relic.s}</span>
+            </div>`;
+        });
+        html += `</div>`;
+    }
+
+    container.innerHTML = html;
+}
+
+// ▼▼ 【第3弾新規】遺物を装備する処理 ▼▼
+function equipRelic(relicId) {
+    const relicIndex = relicsInventory.findIndex(r => r.id === relicId);
+    if (relicIndex === -1) return;
+    const relic = relicsInventory[relicIndex];
+
+    // 各スロット最大5個までの制限チェック
+    if (!equippedRelics[relic.name]) {
+        equippedRelics[relic.name] = [];
+    }
+    if (equippedRelics[relic.name].length >= 5) {
+        alert(`「${relic.name}」は既に5個装備しています。これ以上装備できません。`);
+        return;
+    }
+
+    // インベントリから削除して装備配列に追加
+    relicsInventory.splice(relicIndex, 1);
+    equippedRelics[relic.name].push(relic);
+
+    // データを保存してUI再描画
+    saveData();
+    renderRelicEquipUI();
+}
+
+// ▼▼ 【第3弾新規】遺物の装備を外す処理 ▼▼
+function unequipRelic(relicName, index) {
+    if (!equippedRelics[relicName] || !equippedRelics[relicName][index]) return;
+    
+    // 装備から削除してインベントリに戻す
+    const relic = equippedRelics[relicName].splice(index, 1)[0];
+    relicsInventory.push(relic);
+
+    // データを保存してUI再描画
+    saveData();
+    renderRelicEquipUI();
 }
 
 // ▼▼ 実際にキャラを犠牲にして遺物を生成する処理 ▼▼
