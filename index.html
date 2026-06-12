@@ -3317,9 +3317,6 @@ function executeSacrifice(charId, relicName) {
     // ⑤ ご要望のガチャ風ポップアップ通知！
     alert(`✨ 儀式完了 ✨\n\n『${relicName}』：P${newRelic.p}、H${newRelic.h}、M${newRelic.m}、S${newRelic.s} をゲットした！！`);
 }
-function renderRelicEquipUI() {
-    document.getElementById('relic-content-area').innerHTML = "<div style='text-align:center; color:#888; padding-top:20px;'>（ここに遺物装備UIが入ります）</div>";
-}
         
         function openGachaList() {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
