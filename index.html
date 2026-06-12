@@ -554,7 +554,9 @@
             <button style="grid-column: span 2; background: #135; border-color: #26a; font-size: 14px;" onclick="openManual()">説明書</button>
             <button style="grid-column: span 2; background: #033; border-color: #0aa; color: #0ff;" onclick="openShadowList()">他者の影に挑む</button>
             <button style="grid-column: span 2; background: #550; border-color: #aa0; color: #ff0; font-size: 12px;" onclick="openMerchant()">案内人の店</button>
+            <button style="grid-column: span 2; background: #050; border-color: #0f0; color: #0f0; font-size: 12px; font-weight: bold;" onclick="openMarket()">⚖️ 取引所</button>
             <button style="grid-column: span 2; background: #550; border-color: #0ff; color: #0ff; font-size: 12px;" onclick="openTalkView()">案内人との会話</button>
+            
 
             <button style="grid-column: span 2; background: #303; border-color: #a0a; color: #f0f; font-size: 12px;" onclick="uploadMyShadow()">影を刻む</button>
             <button style="grid-column: span 2; background: #300; border-color: #f00; color: #f88; font-size: 12px;" onclick="deleteMyShadow()">影を削除</button>
@@ -777,6 +779,27 @@
         <div id="skill-select-controls" class="controls" style="margin-top:5px; grid-template-columns: repeat(2, 1fr); display:none; height:auto; min-height:55px; gap:4px;"></div>
     </div>
 
+<div id="view-market" class="view">
+        <h2 style="color:#0f0;">⚖️ 深淵の取引所 ⚖️</h2>
+        
+        <div class="global-info" style="border-bottom:none; margin-bottom:5px;">
+            <span style="color:#ff0; font-weight:bold;">売上金: <span id="market-wallet-display">0</span> コイン</span>
+            <button onclick="claimMarketCoins()" style="background:#050; border-color:#0f0; color:#fff; font-size:12px; padding:2px 8px; border-radius:3px;">全額引き出す</button>
+        </div>
+        <div class="guide-text">※他のプレイヤーと装具や遺物を売買できます。</div>
+        
+        <div style="display:flex; gap:6px; margin-bottom:10px;">
+            <button id="tab-market-buy" onclick="openMarketTab('buy')" style="flex:1; background:#333; border-color:#0ff; color:#0ff; font-size:12px; padding:6px;">🛒 購入</button>
+            <button id="tab-market-sell" onclick="openMarketTab('sell')" style="flex:1; background:#111; border-color:#444; color:#aaa; font-size:12px; padding:6px;">📦 出品</button>
+            <button id="tab-market-mine" onclick="openMarketTab('mine')" style="flex:1; background:#111; border-color:#444; color:#aaa; font-size:12px; padding:6px;">📋 管理</button>
+        </div>
+        
+        <div id="market-content-area" style="flex:1; overflow-y:auto; padding:5px; background:#050505; border:1px solid #333; display:flex; flex-direction:column; gap:5px; min-height:300px;">
+        </div>
+        
+        <button onclick="closeMarket()" style="height:45px; margin-top:15px; background:#222;">拠点に戻る</button>
+    </div>
+    
     <div id="gambling-view" class="view">
     <div class="global-info">
         <span id="gambling-coin-display">コイン: 0</span>
@@ -1195,6 +1218,25 @@ const RELIC_TIERS = [
     { name: "異臭の縫い包み", reqLv: 150, color: "#aa5" },
     { name: "禍々しい鋏", reqLv: 200, color: "#a5a" }
 ];
+        
+let marketWallet = 0;
+
+// 取引所 出品可能アイテム＆最低金額マスター
+const MARKET_MIN_PRICES = {
+    "鉄の剣": 1,
+    "鉄の剣+2": 10,
+    "鉄の剣+3": 80,
+    "鉄の剣+4": 200,
+    "グレイデンの剣": 1500,
+    "真・グレイデンの剣": 4000,
+    "深淵の指輪": 5000,
+    "呪いの壺": 300,
+    "沈黙の時計": 1000,
+    "忌まわしの本": 1800,
+    "異臭の縫い包み": 3000,
+    "禍々しい鋏": 5000
+};
+        
 let maxClearedStage = 0, currentEndStage = 50; 
 let party = [], enemies = [], stage = 1, queue = [], qIdx = 0, isSelecting = false, currentAction = null, remainingActions = 0; 
 let darumaTrigger = null; 
@@ -1364,7 +1406,7 @@ localStorage.setItem('kanji_rpg_v2_relics_eq', JSON.stringify(equippedRelics));
         coins, stones, box, selectedIds, seeds, auras, weapons, maxClearedStage, 
         isFirstGachaFree, playerName, playerLevel, playerExp, playerIcon, ownedIcons
         ,crystals, accessories,
-        relicsInventory, equippedRelics
+        relicsInventory, equippedRelics, marketWallet // ← カンマ区切りで marketWallet を追加！
     }));
 }
 
@@ -1399,6 +1441,7 @@ if(localStorage.getItem('kanji_rpg_v2_relics_eq')) equippedRelics = JSON.parse(l
         equippedRelics = d.equippedRelics || {
             "呪いの壺": [], "沈黙の時計": [], "忌まわしの本": [], "異臭の縫い包み": [], "禍々しい鋏": []
         };
+        marketWallet = d.marketWallet || 0;
         
         // 保存された名前があれば反映する
         if (d.playerName) {
@@ -5234,6 +5277,334 @@ window.executeCoopEnemyTurn = async function(enemyId) {
         "battleState.turnIndex": state.turnIndex,
         "battleState.log": arrayUnion(...logMsgs)
     });
+};
+
+        // ==========================================
+// オンライン取引所（マーケット）システム
+// ==========================================
+
+window.openMarket = function() {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-market').classList.add('active');
+    window.openMarketTab('buy'); // 最初は「購入」タブを開く
+};
+
+window.closeMarket = function() {
+    document.getElementById('view-market').classList.remove('active');
+    document.getElementById('view-home').classList.add('active');
+};
+
+let currentMarketTab = 'buy';
+
+window.openMarketTab = function(tab) {
+    currentMarketTab = tab;
+    // タブの見た目切り替え
+    document.getElementById('tab-market-buy').style.background = tab === 'buy' ? '#333' : '#111';
+    document.getElementById('tab-market-sell').style.background = tab === 'sell' ? '#333' : '#111';
+    document.getElementById('tab-market-mine').style.background = tab === 'mine' ? '#333' : '#111';
+    document.getElementById('tab-market-buy').style.color = tab === 'buy' ? '#0ff' : '#aaa';
+    document.getElementById('tab-market-sell').style.color = tab === 'sell' ? '#0ff' : '#aaa';
+    document.getElementById('tab-market-mine').style.color = tab === 'mine' ? '#0ff' : '#aaa';
+
+    window.updateMarketWalletDisplay();
+
+    if (tab === 'buy') renderMarketBuy();
+    else if (tab === 'sell') renderMarketSell();
+    else if (tab === 'mine') renderMarketMine();
+};
+
+// 売上金（引き出し待ち）の計算と表示
+window.updateMarketWalletDisplay = async function() {
+    const playerName = document.getElementById('player-name').innerText;
+    try {
+        const q = query(collection(db, "market_listings"), where("sellerName", "==", playerName), where("status", "==", "sold"));
+        const snap = await getDocs(q);
+        let total = 0;
+        snap.forEach(doc => { total += doc.data().price; });
+        document.getElementById('market-wallet-display').innerText = total;
+    } catch (e) {
+        console.error(e);
+    }
+};
+
+// 【1】購入タブの描画
+async function renderMarketBuy() {
+    const container = document.getElementById('market-content-area');
+    container.innerHTML = "<div style='text-align:center; padding:20px; color:#ff0;'>市場の品物を探しています...</div>";
+    try {
+        const q = query(collection(db, "market_listings"), where("status", "==", "selling"), orderBy("createdAt", "desc"));
+        const snap = await getDocs(q);
+        let html = "";
+        
+        snap.forEach(docSnap => {
+            const data = docSnap.data();
+            let statsText = "";
+            // 遺物の場合はステータスも表示
+            if (data.itemType === "relic" && data.itemObj) {
+                statsText = `<br><span style="color:#ccc; font-size:9px;">P:${data.itemObj.p} H:${data.itemObj.h} M:${data.itemObj.m} S:${data.itemObj.s}</span>`;
+            }
+            
+            html += `
+            <div style="border:1px solid #444; background:#111; padding:8px; border-radius:4px; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <div style="color:#ff0; font-weight:bold; font-size:14px;">${data.itemName}</div>
+                    <div style="color:#aaa; font-size:10px;">出品者: ${data.sellerName}${statsText}</div>
+                </div>
+                <button onclick="window.buyMarketItem('${docSnap.id}', '${data.itemName}', ${data.price}, '${data.itemType}')" style="background:#004; border:1px solid #00f; color:#fff; font-size:12px; padding:4px 8px; flex-shrink:0;">${data.price}枚で購入</button>
+            </div>`;
+        });
+        if (html === "") html = "<div style='text-align:center; color:#888; padding:20px;'>現在、出品されている商品はありません。</div>";
+        container.innerHTML = html;
+    } catch (e) {
+        container.innerHTML = "<div style='color:red; text-align:center;'>読み込みエラーが発生しました</div>";
+    }
+}
+
+// アイテムの購入処理
+window.buyMarketItem = async function(docId, itemName, price, itemType) {
+    if (coins < price) return alert(`コインが足りません！（必要: ${price}枚）`);
+    if (!confirm(`【${itemName}】を ${price} 枚で購入しますか？`)) return;
+
+    try {
+        const docRef = doc(db, "market_listings", docId);
+        const docSnap = await getDoc(docRef);
+        
+        if (!docSnap.exists() || docSnap.data().status !== 'selling') {
+            return alert("この商品はすでに他の人に買われたか、取り下げられました。");
+        }
+
+        // コイン消費
+        coins -= price;
+        const data = docSnap.data();
+        
+        // アイテムをインベントリに追加
+        if (itemType === "weapon") {
+            weapons.push({ id: Date.now() + Math.random(), name: itemName });
+        } else if (itemType === "accessory") {
+            accessories.push(itemName);
+        } else if (itemType === "relic") {
+            relicsInventory.push(data.itemObj); // ステータスを引き継ぐ
+        }
+
+        saveData();
+        updateHomeUI();
+
+        // データベースを「売却済(sold)」に更新
+        await updateDoc(docRef, { status: "sold" });
+        alert(`【${itemName}】を購入しました！`);
+        renderMarketBuy(); // 画面を更新
+    } catch (e) {
+        console.error(e);
+        alert("購入処理中にエラーが発生しました。");
+    }
+};
+
+// 【2】出品タブの描画
+function renderMarketSell() {
+    const container = document.getElementById('market-content-area');
+    let html = `<div style="font-size:12px; color:#ff0; margin-bottom:5px;">【出品可能な手持ちアイテム】</div>`;
+    let hasItem = false;
+    
+    // 武器のチェック（装備中以外）
+    const unequippedWeapons = weapons.filter(w => !box.some(b => b.weaponId === w.id));
+    unequippedWeapons.forEach(w => {
+        if (MARKET_MIN_PRICES[w.name]) {
+            hasItem = true;
+            html += createSellItemRow(w.id, "weapon", w.name, MARKET_MIN_PRICES[w.name]);
+        }
+    });
+
+    // 装飾品のチェック（装備中以外）
+    let equippedAcc = box.map(b => b.accessory).filter(Boolean);
+    let freeAccs = [...accessories];
+    equippedAcc.forEach(ea => {
+        const idx = freeAccs.indexOf(ea);
+        if(idx > -1) freeAccs.splice(idx, 1);
+    });
+    freeAccs.forEach((a, idx) => {
+        if (MARKET_MIN_PRICES[a]) {
+            hasItem = true;
+            html += createSellItemRow(idx, "accessory", a, MARKET_MIN_PRICES[a]); // idxで渡す
+        }
+    });
+
+    // 遺物のチェック
+    relicsInventory.forEach((r) => {
+        if (MARKET_MIN_PRICES[r.name]) {
+            hasItem = true;
+            let stats = ` (P:${r.p} H:${r.h} M:${r.m} S:${r.s})`;
+            html += createSellItemRow(r.id, "relic", r.name, MARKET_MIN_PRICES[r.name], stats);
+        }
+    });
+
+    if (!hasItem) {
+        html += "<div style='text-align:center; color:#888; padding:20px;'>出品できるアイテムを持っていません。<br>（※装備中のアイテムは表示されません）</div>";
+    }
+    container.innerHTML = html;
+}
+
+function createSellItemRow(itemId, itemType, itemName, minPrice, extraText = "") {
+    return `
+    <div style="border:1px solid #444; background:#111; padding:8px; border-radius:4px; display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+        <div style="color:#0ff; font-weight:bold; font-size:13px;">${itemName}<span style="color:#888; font-size:9px;">${extraText}</span></div>
+        <div style="display:flex; align-items:center; gap:5px;">
+            <input type="number" id="sell-price-${itemId}" value="${minPrice}" min="${minPrice}" style="width:60px; background:#000; color:#fff; border:1px solid #555; text-align:right;">
+            <button onclick="window.sellMarketItem('${itemId}', '${itemType}', '${itemName}', ${minPrice})" style="background:#400; border:1px solid #f00; color:#fff; font-size:12px; padding:4px;">出品</button>
+        </div>
+    </div>`;
+}
+
+// アイテムの出品処理
+window.sellMarketItem = async function(itemId, itemType, itemName, minPrice) {
+    const priceInput = document.getElementById(`sell-price-${itemId}`).value;
+    const price = parseInt(priceInput);
+    
+    if (isNaN(price) || price < minPrice) {
+        return alert(`【${itemName}】の最低出品価格は ${minPrice} コインです。`);
+    }
+    if (!confirm(`【${itemName}】を ${price} コインで市場に出品しますか？`)) return;
+
+    let itemObjToSave = null;
+
+    // アイテムを手持ちから削除して退避
+    if (itemType === "weapon") {
+        weapons = weapons.filter(w => w.id != itemId);
+    } else if (itemType === "accessory") {
+        accessories.splice(itemId, 1);
+    } else if (itemType === "relic") {
+        const idx = relicsInventory.findIndex(r => r.id == itemId);
+        if (idx > -1) {
+            itemObjToSave = relicsInventory[idx];
+            relicsInventory.splice(idx, 1);
+        }
+    }
+    saveData();
+    updateHomeUI();
+
+    try {
+        const playerName = document.getElementById('player-name').innerText;
+        await addDoc(collection(db, "market_listings"), {
+            sellerName: playerName,
+            itemName: itemName,
+            itemType: itemType,
+            itemObj: itemObjToSave, // 遺物のステータス保存用
+            price: price,
+            status: "selling",
+            createdAt: serverTimestamp()
+        });
+        alert("出品が完了しました！");
+        renderMarketSell(); // 画面を更新
+    } catch (e) {
+        console.error(e);
+        alert("出品エラーが発生しました。");
+    }
+};
+
+// 【3】管理タブ（自分の出品状況）の描画
+async function renderMarketMine() {
+    const container = document.getElementById('market-content-area');
+    container.innerHTML = "<div style='text-align:center; padding:20px; color:#ff0;'>管理情報を取得中...</div>";
+    const playerName = document.getElementById('player-name').innerText;
+
+    try {
+        const q = query(collection(db, "market_listings"), where("sellerName", "==", playerName), orderBy("createdAt", "desc"));
+        const snap = await getDocs(q);
+        let html = `<div style="font-size:12px; color:#ff0; margin-bottom:5px;">【あなたの出品状況】</div>`;
+        let count = 0;
+        
+        snap.forEach(docSnap => {
+            const data = docSnap.data();
+            if (data.status === 'claimed') return; // 精算済みは非表示
+            count++;
+            
+            let statusHtml = "";
+            if (data.status === 'selling') {
+                statusHtml = `<span style="color:#0ff;">販売中</span> <button onclick="window.cancelMarketItem('${docSnap.id}')" style="background:#222; border:1px solid #555; color:#ccc; font-size:10px; padding:2px 4px; margin-left:5px;">回収</button>`;
+            } else if (data.status === 'sold') {
+                statusHtml = `<span style="color:#ff0; font-weight:bold;">売却済 (未精算)</span>`;
+            }
+
+            html += `
+            <div style="border:1px dashed #555; background:#111; padding:6px; border-radius:4px; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <div style="color:#fff; font-weight:bold; font-size:13px;">${data.itemName}</div>
+                    <div style="color:#aaa; font-size:10px;">価格: ${data.price} 枚</div>
+                </div>
+                <div style="font-size:12px;">${statusHtml}</div>
+            </div>`;
+        });
+        
+        if (count === 0) html += "<div style='text-align:center; color:#888; padding:20px;'>現在、取引所で管理しているアイテムはありません。</div>";
+        container.innerHTML = html;
+    } catch (e) {
+        console.error(e);
+        container.innerHTML = "<div style='color:red; text-align:center;'>エラーが発生しました</div>";
+    }
+}
+
+// 出品の取り下げ（回収）
+window.cancelMarketItem = async function(docId) {
+    if (!confirm("出品を取り下げて、アイテムを手元に戻しますか？")) return;
+    try {
+        const docRef = doc(db, "market_listings", docId);
+        const docSnap = await getDoc(docRef);
+        const data = docSnap.data();
+
+        await deleteDoc(docRef);
+        
+        // アイテムをインベントリに戻す
+        if (data.itemType === "weapon") {
+            weapons.push({ id: Date.now() + Math.random(), name: data.itemName });
+        } else if (data.itemType === "accessory") {
+            accessories.push(data.itemName);
+        } else if (data.itemType === "relic") {
+            relicsInventory.push(data.itemObj);
+        }
+        
+        saveData();
+        updateHomeUI();
+        alert("アイテムを回収しました。");
+        renderMarketMine();
+    } catch (e) {
+        console.error(e);
+        alert("回収エラーが発生しました。");
+    }
+};
+
+// 売上金の全額精算（引き出し）
+window.claimMarketCoins = async function() {
+    const playerName = document.getElementById('player-name').innerText;
+    try {
+        const q = query(collection(db, "market_listings"), where("sellerName", "==", playerName), where("status", "==", "sold"));
+        const snap = await getDocs(q);
+        
+        let total = 0;
+        let docsToUpdate = [];
+        snap.forEach(docSnap => {
+            total += docSnap.data().price;
+            docsToUpdate.push(docSnap.id);
+        });
+
+        if (total === 0) return alert("引き出せる売上金がありません。");
+
+        // コインを所持金に追加
+        coins += total;
+        saveData();
+        document.getElementById('global-coin-count').innerText = coins;
+
+        // DBの状態を 'claimed' (精算済) に更新
+        for (const id of docsToUpdate) {
+            await updateDoc(doc(db, "market_listings", id), { status: "claimed" });
+        }
+
+        alert(`チャリンッ！🪙\n売上金 ${total} コインを財布に収めました！`);
+        window.updateMarketWalletDisplay();
+        if (currentMarketTab === 'mine') renderMarketMine();
+        updateHomeUI();
+    } catch (e) {
+        console.error(e);
+        alert("精算処理中にエラーが発生しました。");
+    }
 };
         
 </script>
