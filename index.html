@@ -3040,7 +3040,23 @@ let isCrit = false;
     next();
 }
 
-// ▼ 遺物調査画面の開閉処理 ▼
+// ▼▼ 【第4弾新規】装備中の全遺物の合計ステータスを計算する関数 ▼▼
+function getEquippedRelicTotalStats() {
+    let total = { p: 0, h: 0, m: 0, s: 0 };
+    for (let key in equippedRelics) {
+        if (equippedRelics[key]) {
+            equippedRelics[key].forEach(relic => {
+                total.p += relic.p || 0;
+                total.h += relic.h || 0;
+                total.m += relic.m || 0;
+                total.s += relic.s || 0;
+            });
+        }
+    }
+    return total;
+}
+        
+        // ▼ 遺物調査画面の開閉処理 ▼
 function openRelicView() {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById('view-relic').classList.add('active');
