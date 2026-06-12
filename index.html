@@ -3231,7 +3231,7 @@ function renderRelicEquipUI() {
         relicsInventory.forEach(relic => {
             const tier = RELIC_TIERS.find(t => t.name === relic.name) || { color: "#fff" };
             html += `
-            <div onclick="equipRelic(${relic.id})" style="border:1px solid #444; background:#111; padding:6px; border-radius:4px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition:0.2s;" onmouseover="this.style.borderColor='${tier.color}'" onmouseout='this.style.borderColor="#444"'>
+            <div onclick="equipRelic('${relic.id}')" style="border:1px solid #444; background:#111; padding:6px; border-radius:4px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition:0.2s;" onmouseover="this.style.borderColor='${tier.color}'" onmouseout='this.style.borderColor="#444"'>
                 <span style="font-size:12px; color:${tier.color}; font-weight:bold;">${relic.name}</span>
                 <span style="font-size:10px; color:#ccc; font-family:monospace;">P:${relic.p} | H:${relic.h} | M:${relic.m} | S:${relic.s}</span>
             </div>`;
@@ -3244,7 +3244,7 @@ function renderRelicEquipUI() {
 
 // ▼▼ 【第3弾新規】遺物を装備する処理 ▼▼
 function equipRelic(relicId) {
-    const relicIndex = relicsInventory.findIndex(r => r.id === relicId);
+    const relicIndex = relicsInventory.findIndex(r => String(r.id) === String(relicId));
     if (relicIndex === -1) return;
     const relic = relicsInventory[relicIndex];
 
