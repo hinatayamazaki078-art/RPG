@@ -2287,7 +2287,10 @@ window.handleDragEnd = function(e) {
     function updateShopUI() {
     const char = box.find(b => b.id === shopTargetId); if(!char) return closeShop();
     let wpBonus = 0; if (char.weaponId) { const wp = weapons.find(w => w.id === char.weaponId); if (wp) wpBonus = getWeaponBonus(wp.name); }
-    
+
+// ▼▼ 遺物ボーナスを取得 ▼▼
+    const relicStats = getEquippedRelicTotalStats();
+        
     let skillText = (char.skills && char.skills.length > 0) ? char.skills.map(s => `【${s.name}】`).join(' ') : 'なし';
     // ▼ getUnitNextExp を getNextLvExp に修正 ▼
     const expText = char.lv >= 300 ? "MAX" : `${char.exp} / ${getNextLvExp(char.lv)}`;
@@ -2296,7 +2299,7 @@ window.handleDragEnd = function(e) {
             <span style="font-size:20px; color:#ff0;">Lv.${char.lv || 1}</span>
         </span>
         <div class="stats-text" style="color:#0ff; margin-bottom:2px;">EXP: ${expText}</div>
-        <div class="stats-text">攻撃:${char.p}${wpBonus > 0 ? `(+${wpBonus})` : ''} HP:${char.h} 速さ:${char.s} MP:${char.m}</div>
+        <div class="stats-text">攻撃:${char.p}${wpBonus > 0 ? `(+${wpBonus})` : ''}${relicStats.p > 0 ? `<span style="color:#f55;">(+${relicStats.p})</span>` : ''} HP:${char.h}${relicStats.h > 0 ? `<span style="color:#5f5;">(+${relicStats.h})</span>` : ''} 速さ:${char.s}${relicStats.s > 0 ? `<span style="color:#5f5;">(+${relicStats.s})</span>` : ''} MP:${char.m}${relicStats.m > 0 ? `<span style="color:#55f;">(+${relicStats.m})</span>` : ''}</div>
         <div style="font-size:12px; margin-top:3px; color:#ff0;">技枠: ${char.skills.length}/${char.maxSkillSlots||1} ${skillText}</div>
         
         <div style="font-size:12px; margin-top:6px; display:flex; align-items:center; justify-content:space-between; border-top:1px dashed #444; padding-top:5px;">
@@ -2584,6 +2587,17 @@ function setupBattleData(arr, isP) {
             accS = accessoriesData[c.accessory].s;
             accM = accessoriesData[c.accessory].m;
         }
+
+        // ▼▼ 遺物ボーナスを取得 (プレイヤー側のみ) ▼▼
+        let relP = 0, relH = 0, relS = 0, relM = 0;
+        if (isP) {
+            const relicStats = getEquippedRelicTotalStats();
+            relP = relicStats.p;
+            relH = relicStats.h;
+            relS = relicStats.s;
+            relM = relicStats.m;
+        }
+        // ▲▲ ここまで ▲▲
         
         let activeAuras = [];
         if (isP && c.auraIds) {
@@ -2601,7 +2615,7 @@ function setupBattleData(arr, isP) {
         }
 
         return {
-            ...c, curH: c.h + accH, maxH: c.h + accH, curM: c.m + accM, maxM: c.m + accM, p: c.p + wpBonus + accP, baseP: c.p + wpBonus + accP, baseS: c.s + accS,
+            ...c, curH: c.h + accH + relH, maxH: c.h + accH + relH, curM: c.m + accM + relM, maxM: c.m + accM + relM, p: c.p + wpBonus + accP + relP, baseP: c.p + wpBonus + accP + relP, baseS: c.s + accS + relS,
             isP: isP, poison: false, guard: false, charm: 0, lastDmg: 0, 
             auras: activeAuras, skillsList: activeSkills, 
             usedPhoenix: false, blind: 0, paralyze: 0, atkBuff: 0, invincible: 0, deathTrap: false,
