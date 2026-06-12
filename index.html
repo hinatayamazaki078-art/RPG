@@ -3040,7 +3040,23 @@ let isCrit = false;
     next();
 }
 
-// ▼▼ 【第4弾新規】装備中の全遺物の合計ステータスを計算する関数 ▼▼
+// ▼▼ 【第4弾】装備中の全遺物の合計ステータスを計算する関数 ▼▼
+function getEquippedRelicTotalStats() {
+    let total = { p: 0, h: 0, m: 0, s: 0 };
+    for (let key in equippedRelics) {
+        if (equippedRelics[key]) {
+            equippedRelics[key].forEach(relic => {
+                total.p += relic.p || 0;
+                total.h += relic.h || 0;
+                total.m += relic.m || 0;
+                total.s += relic.s || 0;
+            });
+        }
+    }
+    return total;
+}
+        
+        // ▼▼ 【第4弾新規】装備中の全遺物の合計ステータスを計算する関数 ▼▼
 function getEquippedRelicTotalStats() {
     let total = { p: 0, h: 0, m: 0, s: 0 };
     for (let key in equippedRelics) {
