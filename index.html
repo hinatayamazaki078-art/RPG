@@ -560,6 +560,7 @@
             <button style="grid-column: span 2; background: #300; border-color: #f00; color: #f88; font-size: 12px;" onclick="deleteMyShadow()">影を削除</button>
             
             <button style="grid-column: span 4; background: #500; border-color: #f00; color: #ff0; font-size: 15px; font-weight: bold; text-shadow: 0 0 5px #f00;" onclick="openShadowKing()">👑 影ノ支配（玉座）に挑む</button>
+            <button style="grid-column: span 2; background: #202; border-color: #a0a; color: #f0f; font-size: 14px; font-weight: bold;" onclick="openRelicView()">🏺 遺物調査</button>
             <button style="grid-column: span 4; background: #400; border-color: #a00; color: #fff; font-size: 15px; font-weight: bold; text-shadow: 0 0 5px #a00;" onclick="openMakyouSelection()">🌲 魔境探索</button>
             <button id="btn-start" style="grid-column: span 4;" onclick="openStageSelection()">戦場出撃</button>
         </div>
@@ -645,6 +646,20 @@
         <div id="boss-list" class="box-list" style="grid-template-columns: 1fr; max-height: 480px; overflow-y: auto;"></div>
         <button onclick="closeBossSelection()" style="height:50px; margin-top:10px;">拠点に戻る</button>
     </div>
+
+    <div id="view-relic" class="view">
+    <h2 style="color:#a0a;">🏺 遺物調査 🏺</h2>
+    <div class="guide-text" style="color:#ccc;">一定レベルに達した漢字を贄とし、全キャラを強化する遺物を生成します。</div>
+    
+    <div style="display:flex; justify-content:space-around; margin: 10px 0; border-bottom: 1px solid #444; padding-bottom: 5px;">
+        <button onclick="renderRelicSacrificeUI()" style="width: 48%; background: #400; border-color: #f55;">生成 (贄の儀)</button>
+        <button onclick="renderRelicEquipUI()" style="width: 48%; background: #004; border-color: #55f;">装備 (各5個まで)</button>
+    </div>
+
+    <div id="relic-content-area" style="flex:1; overflow-y:auto; padding: 5px; background: #050505; border: 1px solid #333;"></div>
+
+    <button onclick="closeRelicView()" style="height:45px; margin-top:15px; background: #222;">拠点に戻る</button>
+</div>
 
     <div id="view-makyou-select" class="view">
         <h2 style="color:#a00;">魔境探索</h2>
@@ -1330,7 +1345,8 @@ function saveData() {
     localStorage.setItem('kanji_rpg_v2_data', JSON.stringify({ 
         coins, stones, box, selectedIds, seeds, auras, weapons, maxClearedStage, 
         isFirstGachaFree, playerName, playerLevel, playerExp, playerIcon, ownedIcons
-        ,crystals, accessories
+        ,crystals, accessories,
+        relicsInventory, equippedRelics
     }));
 }
 
@@ -1359,6 +1375,10 @@ function loadData() {
         playerIcon = d.playerIcon || '👤';
         ownedIcons = d.ownedIcons || ['👤'];
         document.getElementById('player-icon').innerHTML = playerIcon;
+        relicsInventory = d.relicsInventory || [];
+        equippedRelics = d.equippedRelics || {
+            "呪いの壺": [], "沈黙の時計": [], "忌まわしの本": [], "異臭の縫い包み": [], "禍々しい鋏": []
+        };
         
         // 保存された名前があれば反映する
         if (d.playerName) {
@@ -2049,7 +2069,29 @@ function playUltraGacha(times) {
     pullNextUltra();
 }
     
-function playAuraGacha() {
+// ▼▼ 遺物のステータス抽選ロジック ▼▼
+function rollRelicStat() {
+    const r = Math.random() * 100;
+    if (r < 70) return 1;
+    if (r < 90) return Math.floor(Math.random() * 4) + 2;   // 2〜5
+    if (r < 95) return Math.floor(Math.random() * 5) + 6;   // 6〜10
+    if (r < 98) return Math.floor(Math.random() * 10) + 11; // 11〜20
+    return Math.floor(Math.random() * 10) + 21;             // 21〜30 (2%)
+}
+
+function generateRelicStats(relicName) {
+    return {
+        id: Date.now() + Math.random(),
+        name: relicName,
+        p: rollRelicStat(),
+        h: rollRelicStat(),
+        m: rollRelicStat(),
+        s: rollRelicStat()
+    };
+}
+// ▲▲ ここまで ▲▲
+        
+        function playAuraGacha() {
     const cost = 30; if (coins < cost) return alert(`コインが不足しています！`); coins -= cost; document.getElementById('global-coin-count').innerText = coins;
     openGachaOverlay("霊気収束中..."); const display = document.getElementById('gacha-kanji-display');
     let count = 0; const interval = setInterval(() => {
@@ -2978,7 +3020,28 @@ let isCrit = false;
     next();
 }
 
-function openGachaList() {
+// ▼ 遺物調査画面の開閉処理 ▼
+function openRelicView() {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-relic').classList.add('active');
+    renderRelicSacrificeUI(); // 最初に開いたときは「生成」画面を表示
+}
+
+function closeRelicView() {
+    document.getElementById('view-relic').classList.remove('active');
+    document.getElementById('view-home').classList.add('active');
+    updateHomeUI();
+}
+
+// 枠組み用ダミー関数（第2弾・第3弾で中身を作ります）
+function renderRelicSacrificeUI() {
+    document.getElementById('relic-content-area').innerHTML = "<div style='text-align:center; color:#888; padding-top:20px;'>（ここに生成・犠牲にするUIが入ります）</div>";
+}
+function renderRelicEquipUI() {
+    document.getElementById('relic-content-area').innerHTML = "<div style='text-align:center; color:#888; padding-top:20px;'>（ここに遺物装備UIが入ります）</div>";
+}
+        
+        function openGachaList() {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById('view-gacha-list').classList.add('active');
 }
