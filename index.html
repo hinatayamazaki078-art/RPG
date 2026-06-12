@@ -4868,20 +4868,7 @@ function closeIntro() {
 }
    // --- ここから下に追記 ---
 
-function changeName() {
-  // プレイヤーに名前を入力してもらう
-  let input = prompt("名前を入力してください:", "名もなき者");
-  
-  // 入力がキャンセルされず、空欄でなければ更新する
-  if (input !== null && input !== "") {
-    // 画面上の表示を更新
-    document.getElementById("player-name").innerText = input;
-    
-    // もしプレイヤーデータを保存しているなら、ここで更新する（該当なければ削除可）
-    // player.name = input;
-    // saveGame(); // セーブ関数がある場合
-  }
-}
+
 
     // ==========================================
   // オープンチャット機能（v9対応版）
