@@ -1179,6 +1179,22 @@ let isFirstGachaFree = true;
 let isBossMode = false, currentBossName = null;
 let isDigMode = false, currentDigTier = 0; 
 let isShadowMode = false; 
+        let relicsInventory = []; // 所持している未装備の遺物
+let equippedRelics = {
+    "呪いの壺": [], // 最大5個まで入る配列
+    "沈黙の時計": [],
+    "忌まわしの本": [],
+    "異臭の縫い包み": [],
+    "禍々しい鋏": []
+};
+
+const RELIC_TIERS = [
+    { name: "呪いの壺", reqLv: 30, color: "#a55" },
+    { name: "沈黙の時計", reqLv: 50, color: "#55a" },
+    { name: "忌まわしの本", reqLv: 80, color: "#5a5" },
+    { name: "異臭の縫い包み", reqLv: 150, color: "#aa5" },
+    { name: "禍々しい鋏", reqLv: 200, color: "#a5a" }
+];
 let maxClearedStage = 0, currentEndStage = 50; 
 let party = [], enemies = [], stage = 1, queue = [], qIdx = 0, isSelecting = false, currentAction = null, remainingActions = 0; 
 let darumaTrigger = null; 
@@ -3035,7 +3051,81 @@ function closeRelicView() {
 
 // 枠組み用ダミー関数（第2弾・第3弾で中身を作ります）
 function renderRelicSacrificeUI() {
-    document.getElementById('relic-content-area').innerHTML = "<div style='text-align:center; color:#888; padding-top:20px;'>（ここに生成・犠牲にするUIが入ります）</div>";
+    const container = document.getElementById('relic-content-area');
+    let html = `<div style="text-align:center; margin-bottom:10px; font-size:12px; color:#ff0;">贄にする漢字を選んでください（Lv30以上のみ表示）</div>`;
+    
+    // Lv30以上のキャラだけを抽出
+    const eligibleChars = box.filter(b => b.lv >= 30);
+    
+    if (eligibleChars.length === 0) {
+        html += `<div style="text-align:center; color:#888; padding:20px;">条件を満たす（Lv30以上の）漢字がいません...</div>`;
+        container.innerHTML = html;
+        return;
+    }
+
+    html += `<div style="display:flex; flex-direction:column; gap:8px;">`;
+    
+    // 条件を満たすキャラごとに枠を作る
+    eligibleChars.forEach(c => {
+        let buttonsHtml = "";
+        
+        // そのキャラのレベルで作れる遺物のボタンを並べる
+        RELIC_TIERS.forEach(tier => {
+            if (c.lv >= tier.reqLv) {
+                buttonsHtml += `<button onclick="executeSacrifice(${c.id}, '${tier.name}')" style="font-size:10px; padding:4px 8px; background:#111; border:1px solid ${tier.color}; color:${tier.color}; margin-right:4px; margin-top:4px; cursor:pointer;">${tier.name}</button>`;
+            }
+        });
+
+        html += `
+        <div style="border:1px solid #444; background:#111; padding:8px; border-radius:4px; display:flex; flex-direction:column;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <span style="font-size:14px; color:#fff;">${c.name} <span style="color:#ff0; font-size:12px;">Lv.${c.lv}</span></span>
+            </div>
+            <div>${buttonsHtml}</div>
+        </div>`;
+    });
+    
+    html += `</div>`;
+    container.innerHTML = html;
+}
+
+// ▼▼ 実際にキャラを犠牲にして遺物を生成する処理 ▼▼
+function executeSacrifice(charId, relicName) {
+    // 最後の1体は犠牲にできないようにする安全装置
+    if (box.length <= 1) {
+        alert("最後の1体を犠牲にすることはできません。拠点に最低1体残してください。");
+        return;
+    }
+
+    const charIndex = box.findIndex(b => b.id === charId);
+    if (charIndex === -1) return;
+    const char = box[charIndex];
+
+    // 最終確認
+    if (!confirm(`本当に【${char.name} (Lv.${char.lv})】を犠牲にして「${relicName}」を生成しますか？\n※この漢字は永遠に失われます。（装備中の霊気・装具は手元に戻ります）`)) {
+        return;
+    }
+
+    // ① キャラから装備品を外す（削除された時点で自動的に未装備扱いになります）
+    char.auraId = null; 
+    char.auraIds = []; 
+    char.weaponId = null;
+
+    // ② キャラをボックスから削除し、パーティに編成されていたら外す
+    box.splice(charIndex, 1);
+    selectedIds = selectedIds.filter(id => id !== charId);
+
+    // ③ 第1弾で作った乱数関数を使って、遺物を生成してインベントリに入れる
+    const newRelic = generateRelicStats(relicName);
+    relicsInventory.push(newRelic);
+
+    // ④ データを保存してUIを最新にする
+    saveData();
+    updateHomeUI();
+    renderRelicSacrificeUI();
+
+    // ⑤ ご要望のガチャ風ポップアップ通知！
+    alert(`✨ 儀式完了 ✨\n\n『${relicName}』：P${newRelic.p}、H${newRelic.h}、M${newRelic.m}、S${newRelic.s} をゲットした！！`);
 }
 function renderRelicEquipUI() {
     document.getElementById('relic-content-area').innerHTML = "<div style='text-align:center; color:#888; padding-top:20px;'>（ここに遺物装備UIが入ります）</div>";
