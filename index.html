@@ -5602,9 +5602,11 @@ window.claimMarketCoins = async function() {
         alert("回収エラーが発生しました。");
     }
 };
-</script> <script type="module">
+</script>
+
+<script type="module">
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getFirestore, updateDoc, doc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+    import { getFirestore, updateDoc, doc, arrayUnion, collection, addDoc, serverTimestamp, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
     
     const firebaseConfig = {
         apiKey: "AIzaSyD2v_krmy0L-lzvLF6_AdoeI5dbXyJr4JM",
@@ -5615,11 +5617,76 @@ window.claimMarketCoins = async function() {
         appId: "1:899351655158:web:8f30375e4188c2184232d7"
     };
     
-    // ① 通信の重複エラーを完全に防ぐ魔法のコード
     const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
     const db = getFirestore(app);
 
-    // ② 「誰を狙うか」の緑枠をしっかり表示させる修正（エラー対策強化）
+    // ★追加: Gifエフェクトをキャラの上に再生する専用関数
+    window.playGifEffect = function(gifUrl, targetId, duration = 1200) {
+        const targetEl = document.getElementById(`unit-box-${targetId}`);
+        if (!targetEl) return;
+        const effectImg = document.createElement('img');
+        effectImg.src = gifUrl;
+        effectImg.style.position = 'fixed';
+        const rect = targetEl.getBoundingClientRect();
+        effectImg.style.left = (rect.left + rect.width / 2) + 'px';
+        effectImg.style.top = (rect.top + rect.height / 2) + 'px';
+        effectImg.style.transform = 'translate(-50%, -50%)';
+        effectImg.style.pointerEvents = 'none';
+        effectImg.style.zIndex = '9999';
+        effectImg.style.width = '120px';
+        document.body.appendChild(effectImg);
+        setTimeout(() => { if (effectImg.parentNode) effectImg.parentNode.removeChild(effectImg); }, duration);
+    };
+
+    // ① 部屋作成＆参加時に【遺物や武器ステータス】を完全反映させる
+    window.createCoopRoom = async function() {
+        const leaderId = selectedIds[0];
+        const leaderChar = box.find(b => b.id === leaderId);
+        const myUnit = typeof setupBattleData === 'function' ? setupBattleData([leaderChar], true)[0] : JSON.parse(JSON.stringify(leaderChar));
+        const playerName = document.getElementById('player-name').innerText || '名もなき者';
+        try {
+            const docRef = await addDoc(collection(db, "coop_rooms"), {
+                bossId: window.currentCoopBossId, hostName: playerName, status: "waiting", members: [myUnit], createdAt: serverTimestamp()
+            });
+            window.currentCoopRoomId = docRef.id; window.isCoopHost = true; window.listenToCoopRoom();
+        } catch (e) { console.error("ルーム作成エラー", e); }
+    };
+
+    window.joinCoopRoom = async function(roomId, roomData) {
+        if (roomData.members.length >= 4) return alert("このパーティーは満員です。");
+        const leaderId = selectedIds[0];
+        const leaderChar = box.find(b => b.id === leaderId);
+        const myUnit = typeof setupBattleData === 'function' ? setupBattleData([leaderChar], true)[0] : JSON.parse(JSON.stringify(leaderChar));
+        try {
+            await updateDoc(doc(db, "coop_rooms", roomId), { members: arrayUnion(myUnit) });
+            window.currentCoopRoomId = roomId; window.isCoopHost = false; window.listenToCoopRoom();
+        } catch (e) { console.error("参加エラー", e); }
+    };
+
+    window.startCoopBattleHost = async function() {
+        const roomRef = doc(db, "coop_rooms", window.currentCoopRoomId);
+        const docSnap = await getDoc(roomRef);
+        const roomData = docSnap.data();
+        const boss = window.coopBosses[window.currentCoopBossId];
+        let enemiesData = [
+            { id: 8001, name: "青鬼", p: 15, h: 200, maxH: 200, s: 10, m: 0, isP: false, curH: 200 },
+            { id: 8002, name: boss.name, img: boss.img, p: boss.P, h: boss.H, maxH: boss.maxH, s: boss.S, m: boss.M, isP: false, curH: boss.maxH },
+            { id: 8003, name: "赤鬼", p: 20, h: 180, maxH: 180, s: 12, m: 0, isP: false, curH: 180 }
+        ];
+        let partyData = roomData.members.map((m) => ({
+            ...m, isP: true, curH: m.maxH || m.h, curM: m.maxM || m.m || 0 // HP・MPを最大値から開始
+        }));
+        let allUnits = [...partyData, ...enemiesData];
+        allUnits.sort((a, b) => b.s - a.s);
+        let queueIds = allUnits.map(u => u.id);
+
+        await updateDoc(roomRef, { 
+            status: "playing",
+            battleState: { turnIndex: 0, queue: queueIds, party: partyData, enemies: enemiesData, log: ["🔥 共闘作戦が開始された！"] }
+        });
+    };
+
+    // ② ターゲット選択枠の表示
     window.startCoopTargetSelection = function(type, skillName = null) {
         if (type === 'skill') {
             const isAoE = ['感電','咆哮','輝炎ノ息','虚影','鱗粉','御廚子','巨大触手','炎のブレス','伏魔御廚子','達磨さんが転んだ','ムチ','ブリザード','妖精の粉','攻撃増幅薬','蘇りの歌','強固な甲羅','天変地異','デスペラードヒューリー','支配','グレイデンスレイヴ','忘却の波動'].includes(skillName);
@@ -5627,38 +5694,23 @@ window.claimMarketCoins = async function() {
         }
         window.isSelecting = true; 
         window.currentAction = (type === 'attack') ? "coop_attack" : "coop_skill"; 
-        
         if (type === 'attack') addLog("標的を選択してください（タップして決定）"); 
         else addLog(`【${skillName}】の対象を選択してください`);
-        
-        if (typeof updateUI === 'function') updateUI(); // 緑色の選択枠を出す
+        if (typeof updateUI === 'function') updateUI();
     };
 
-    // ③ UIのレイアウト崩れ防止 ＆ ターン進行の安定化
     window.checkCoopTurn = function() {
         const state = window.coopBattleState;
         if (!state || !state.queue || state.queue.length === 0) return;
-
         const allEnemiesDead = state.enemies.every(e => e.curH <= 0);
         const allPlayersDead = state.party.every(p => p.curH <= 0);
-
-        if (allEnemiesDead) {
-            addLog("🎉 共闘作戦クリア！ボスを撃破しました！");
-            setTimeout(() => window.leaveCoopRoom(), 3000);
-            return;
-        }
-        if (allPlayersDead) {
-            addLog("💀 パーティーは全滅した...");
-            setTimeout(() => window.leaveCoopRoom(), 3000);
-            return;
-        }
+        if (allEnemiesDead) { addLog("🎉 共闘作戦クリア！ボスを撃破しました！"); setTimeout(() => window.leaveCoopRoom(), 3000); return; }
+        if (allPlayersDead) { addLog("💀 パーティーは全滅した..."); setTimeout(() => window.leaveCoopRoom(), 3000); return; }
 
         const currentActorId = state.queue[state.turnIndex];
         const myLeaderId = selectedIds[0];
-        
         const isMyTurn = String(currentActorId) === String(myLeaderId);
         const isEnemyTurn = state.enemies.some(e => String(e.id) === String(currentActorId));
-
         const controls = document.getElementById('battle-controls');
         if (controls) {
             if (isMyTurn) {
@@ -5666,66 +5718,48 @@ window.claimMarketCoins = async function() {
                 document.getElementById('btn-atk').onclick = () => window.startCoopTargetSelection('attack');
                 document.getElementById('btn-skl').onclick = () => window.showCoopSkillMenu();
                 addLog("【あなたのターンです！】コマンドを選択してください。");
-            } else {
-                controls.style.display = 'none';
-            }
+            } else { controls.style.display = 'none'; }
         }
-
-        if (isEnemyTurn && window.isCoopHost) {
-            setTimeout(() => { window.executeCoopEnemyTurn(currentActorId); }, 1500);
-        }
+        if (isEnemyTurn && window.isCoopHost) { setTimeout(() => { window.executeCoopEnemyTurn(currentActorId); }, 1500); }
     };
 
-    // ④ 小数点バグを防ぎ、攻撃が不発にならないようにする修正
+    // ③ エフェクト情報を記録してサーバーへ送信する
     window.executeCoopAction = async function(targetId, type, skillName = null) {
-        window.isSelecting = false;
-        window.currentAction = null;
-        const ctrl = document.getElementById('battle-controls');
-        if (ctrl) ctrl.style.display = 'none';
-
-        const state = window.coopBattleState;
-        if (!state) return;
+        window.isSelecting = false; window.currentAction = null;
+        const ctrl = document.getElementById('battle-controls'); if (ctrl) ctrl.style.display = 'none';
+        const state = window.coopBattleState; if (!state) return;
         const myActorId = state.queue[state.turnIndex];
-        
         const myActor = state.party.find(u => String(u.id) === String(myActorId));
         let target = targetId ? [...state.party, ...state.enemies].find(u => String(u.id) === String(targetId)) : null;
-
         if (!myActor) return;
 
-        let logMsgs = [];
-        let isCrit = false;
+        let logMsgs = []; let isCrit = false; let generatedEffects = [];
 
         if (type === 'attack') {
             if (!target) return;
             myActor.curM = Math.min(myActor.maxM, (myActor.curM || 0) + 3);
-            
             let dmg = Math.floor(myActor.p * (1 + (myActor.atkBuff || 0)));
             if (myActor.auras && myActor.auras.some(a => a.type === '会心' && Math.random() * 100 < a.value)) { dmg *= 2; isCrit = true; }
             if (dmg < 1) dmg = 1;
-            
             target.curH = Math.max(0, target.curH - dmg);
             logMsgs.push(isCrit ? `💥 ${myActor.name} の会心の一撃！ ${target.name} に ${dmg} のダメージ！` : `⚔️ ${myActor.name} の攻撃！ ${target.name} に ${dmg} のダメージ！`);
-            if (typeof showDamageNumber === 'function') showDamageNumber(target.id, dmg, isCrit ? 'crit' : 'normal');
-
+            generatedEffects.push({ targetId: target.id, amount: dmg, type: isCrit ? 'crit' : 'normal', effectName: 'attack' });
         } else if (type === 'skill') {
             const sName = skillName;
             let costM = (typeof SKILL_DATA !== 'undefined' && SKILL_DATA[sName]) ? SKILL_DATA[sName].cost : 0;
-            
             if (sName === '捨て身') myActor.curH = Math.max(1, myActor.curH - 5);
             else if (sName === '精霊の歌') myActor.curH = Math.max(1, Math.floor(myActor.curH / 2));
             else myActor.curM = Math.max(0, (myActor.curM || 0) - costM);
 
             logMsgs.push(`✨ ${myActor.name}：【${sName}】！`);
-
             if (sName === '回復' && target) {
-                let heal = Math.floor(myActor.p * 1.2);
-                target.curH = Math.min(target.maxH, target.curH + heal);
+                let heal = Math.floor(myActor.p * 1.2); target.curH = Math.min(target.maxH, target.curH + heal);
                 logMsgs.push(`🌿 ${target.name} のHPが ${heal} 回復した！`);
-                if (typeof showDamageNumber === 'function') showDamageNumber(target.id, heal, 'heal');
+                generatedEffects.push({ targetId: target.id, amount: heal, type: 'heal', effectName: 'heal' });
             }
-            else if (sName === '全回復' && target) { target.curH = target.maxH; logMsgs.push(`💚 ${target.name} のHPが全回復した！`); if (typeof showDamageNumber === 'function') showDamageNumber(target.id, "全回復", 'heal'); }
-            else if (sName === '斬撃' && target) { target.curH = Math.max(0, target.curH - 5); logMsgs.push(`🗡️ ${target.name} に固定 5 ダメージ！`); if (typeof showDamageNumber === 'function') showDamageNumber(target.id, 5, 'normal'); }
-            else if (sName === '剛腕' && target) { let dmg = Math.floor(myActor.p * 1.8); target.curH = Math.max(0, target.curH - dmg); logMsgs.push(`💥 ${target.name} に ${dmg} の重撃ダメージ！`); if (typeof showDamageNumber === 'function') showDamageNumber(target.id, dmg, 'normal'); }
+            else if (sName === '全回復' && target) { target.curH = target.maxH; logMsgs.push(`💚 ${target.name} のHPが全回復した！`); generatedEffects.push({ targetId: target.id, amount: "全回復", type: 'heal', effectName: 'heal' }); }
+            else if (sName === '斬撃' && target) { target.curH = Math.max(0, target.curH - 5); logMsgs.push(`🗡️ ${target.name} に固定 5 ダメージ！`); generatedEffects.push({ targetId: target.id, amount: 5, type: 'normal', effectName: 'attack' }); }
+            else if (sName === '剛腕' && target) { let dmg = Math.floor(myActor.p * 1.8); target.curH = Math.max(0, target.curH - dmg); logMsgs.push(`💥 ${target.name} に ${dmg} の重撃ダメージ！`); generatedEffects.push({ targetId: target.id, amount: dmg, type: 'normal', effectName: 'attack' }); }
             else if (sName === '鉄壁') { myActor.defBuff = 0.5; logMsgs.push(`🛡️ ${myActor.name} の防御力がアップ！`); }
             else if (sName === '瞑想') { myActor.curM = Math.min(myActor.maxM, (myActor.curM || 0) + 5); logMsgs.push(`🧘 ${myActor.name} のMPが 5 回復した！`); }
             else if (['感電', '咆哮', '輝炎ノ息', '虚影', '鱗粉', '御廚子', '巨大触手', '炎のブレス', '伏魔御廚子', '達磨さんが転んだ', 'ムチ', 'ブリザード', '天変地異', 'デスペラードヒューリー', '支配', 'グレイデンスレイヴ', '忘却の波動'].includes(sName)) {
@@ -5736,21 +5770,17 @@ window.claimMarketCoins = async function() {
                 if (sName === '伏魔御廚子') dmg = 80; if (sName === '達磨さんが転んだ') dmg = 40; if (sName === 'ムチ') dmg = 6;
                 if (sName === 'ブリザード') dmg = 15; if (sName === '天変地異') dmg = 150; if (sName === 'デスペラードヒューリー') dmg = 120;
                 if (sName === '支配') dmg = 60; if (sName === 'グレイデンスレイヴ') dmg = 200; if (sName === '忘却の波動') dmg = 100;
-
-                state.enemies.forEach(e => {
-                    if (e.curH > 0) { e.curH = Math.max(0, e.curH - dmg); if (typeof showDamageNumber === 'function') showDamageNumber(e.id, dmg, 'normal'); }
-                });
+                state.enemies.forEach(e => { if (e.curH > 0) { e.curH = Math.max(0, e.curH - dmg); generatedEffects.push({ targetId: e.id, amount: dmg, type: 'normal', effectName: 'attack' }); } });
                 logMsgs.push(`💥 敵全体に ${dmg} の範囲ダメージ！`);
             }
-            else if (sName === '妖精の粉') { state.party.forEach(p => { if (p.curH > 0) { p.curH = Math.min(p.maxH, p.curH + 30); if (typeof showDamageNumber === 'function') showDamageNumber(p.id, 30, 'heal'); } }); logMsgs.push(`🧚 味方全体のHPが 30 回復した！`); }
+            else if (sName === '妖精の粉') { state.party.forEach(p => { if (p.curH > 0) { p.curH = Math.min(p.maxH, p.curH + 30); generatedEffects.push({ targetId: p.id, amount: 30, type: 'heal', effectName: 'heal' }); } }); logMsgs.push(`🧚 味方全体のHPが 30 回復した！`); }
             else if (sName === '攻撃増幅薬') { state.party.forEach(p => { if (p.curH > 0) p.atkBuff = (p.atkBuff || 0) + 0.2; }); logMsgs.push(`🧪 味方全体の攻撃力が 20% 上昇した！`); }
             else if (sName === '蘇りの歌') { state.party.forEach(p => { if (p.curH <= 0) { p.curH = 10; logMsgs.push(`🎵 ${p.name} がHP10で復活した！`); } }); }
             else if (sName === '強固な甲羅') { myActor.defBuff = (myActor.defBuff || 0) + 0.3; logMsgs.push(`🐢 ${myActor.name} の防御力が 30% 上昇した！`); }
-            else if (sName === '捨て身' && target) { target.curH = Math.max(0, target.curH - 30); logMsgs.push(`💥 ${target.name} に 30 の捨て身ダメージ！`); if (typeof showDamageNumber === 'function') showDamageNumber(target.id, 30, 'normal'); }
-            else if (sName === '精霊の歌') { state.party.forEach(p => { if (p.curH > 0) { p.curH = Math.min(p.maxH, p.curH + 100); if (typeof showDamageNumber === 'function') showDamageNumber(p.id, 100, 'heal'); } }); logMsgs.push(`🌱 味方全体のHPが 100 回復した！`); }
-            else if (sName === '神の裁き' && target) { target.curH = Math.max(0, target.curH - 300); logMsgs.push(`⚡ ${target.name} に 300 の神罰ダメージ！`); if (typeof showDamageNumber === 'function') showDamageNumber(target.id, 300, 'crit'); }
-            else if (sName === '極光' && target) { target.curH = Math.max(0, target.curH - 50); myActor.curH = Math.min(myActor.maxH, myActor.curH + 20); logMsgs.push(`✨ ${target.name} に 50 ダメージ、自身のHPを 20 回復！`); if (typeof showDamageNumber === 'function') showDamageNumber(target.id, 50, 'normal'); if (typeof showDamageNumber === 'function') showDamageNumber(myActor.id, 20, 'heal'); }
-
+            else if (sName === '捨て身' && target) { target.curH = Math.max(0, target.curH - 30); logMsgs.push(`💥 ${target.name} に 30 の捨て身ダメージ！`); generatedEffects.push({ targetId: target.id, amount: 30, type: 'normal', effectName: 'attack' }); }
+            else if (sName === '精霊の歌') { state.party.forEach(p => { if (p.curH > 0) { p.curH = Math.min(p.maxH, p.curH + 100); generatedEffects.push({ targetId: p.id, amount: 100, type: 'heal', effectName: 'heal' }); } }); logMsgs.push(`🌱 味方全体のHPが 100 回復した！`); }
+            else if (sName === '神の裁き' && target) { target.curH = Math.max(0, target.curH - 300); logMsgs.push(`⚡ ${target.name} に 300 の神罰ダメージ！`); generatedEffects.push({ targetId: target.id, amount: 300, type: 'crit', effectName: 'attack' }); }
+            else if (sName === '極光' && target) { target.curH = Math.max(0, target.curH - 50); myActor.curH = Math.min(myActor.maxH, myActor.curH + 20); logMsgs.push(`✨ ${target.name} に 50 ダメージ、自身のHPを 20 回復！`); generatedEffects.push({ targetId: target.id, amount: 50, type: 'normal', effectName: 'attack' }); generatedEffects.push({ targetId: myActor.id, amount: 20, type: 'heal', effectName: 'heal' }); }
             if (myActor.skillsList) { let sk = myActor.skillsList.find(s => s.name === sName); if (sk && sk.oncePerMatch) sk.used = true; }
         }
 
@@ -5766,12 +5796,134 @@ window.claimMarketCoins = async function() {
         if (window.currentCoopRoomId) {
             const roomRef = doc(db, "coop_rooms", window.currentCoopRoomId);
             await updateDoc(roomRef, {
-                "battleState.party": state.party,
-                "battleState.enemies": state.enemies,
-                "battleState.turnIndex": state.turnIndex,
-                "battleState.log": arrayUnion(...logMsgs)
+                "battleState.party": state.party, "battleState.enemies": state.enemies, "battleState.turnIndex": state.turnIndex,
+                "battleState.log": arrayUnion(...logMsgs), "battleState.lastAction": { id: Date.now(), effects: generatedEffects }
             });
         }
+    };
+
+    window.executeCoopEnemyTurn = async function(enemyId) {
+        const state = window.coopBattleState;
+        const enemy = state.enemies.find(e => String(e.id) === String(enemyId));
+        const alivePlayers = state.party.filter(p => p.curH > 0);
+        if (alivePlayers.length === 0 || !enemy) return;
+
+        let logMsgs = []; let generatedEffects = [];
+        let useSkill = null;
+        if (enemy.skills && enemy.skills.length > 0 && Math.random() < 0.4) useSkill = enemy.skills[Math.floor(Math.random() * enemy.skills.length)];
+
+        if (useSkill) {
+            logMsgs.push(`⚠️ ${enemy.name}：【${useSkill.name}】を発動！`);
+            if (useSkill.type === 'aoe' || useSkill.target === 'all') {
+                alivePlayers.forEach(p => {
+                    let dmg = useSkill.power; if (p.defBuff) dmg = Math.max(1, Math.floor(dmg * (1 - p.defBuff)));
+                    p.curH = Math.max(0, p.curH - dmg);
+                    generatedEffects.push({ targetId: p.id, amount: dmg, type: 'normal', effectName: 'attack' });
+                });
+                logMsgs.push(`💥 パーティー全体が ${useSkill.power} のダメージを受けた！`);
+            } else {
+                const target = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
+                let dmg = useSkill.power; if (target.defBuff) dmg = Math.max(1, Math.floor(dmg * (1 - target.defBuff)));
+                target.curH = Math.max(0, target.curH - dmg);
+                logMsgs.push(`💥 ${target.name} が ${dmg} のダメージを受けた！`);
+                generatedEffects.push({ targetId: target.id, amount: dmg, type: 'normal', effectName: 'attack' });
+            }
+        } else if (enemy.name === "邪鬼") {
+            for (let i = 0; i < 2; i++) {
+                const alivePlayersLoop = state.party.filter(p => p.curH > 0);
+                if (alivePlayersLoop.length === 0 || enemy.curH <= 0) break; 
+                if (enemy.curM >= 10 && Math.random() < 0.5) {
+                    enemy.curM -= 10; logMsgs.push(`🔥 邪鬼の行動(${i+1}/2): 技「煉獄ノ炎」！`);
+                    alivePlayersLoop.forEach(target => {
+                        let dmg = 40; target.curH = Math.max(0, target.curH - dmg);
+                        logMsgs.push(`  → ${target.name} は 40 のダメージを受けた！`);
+                        generatedEffects.push({ targetId: target.id, amount: dmg, type: 'normal', effectName: 'attack' });
+                    });
+                } else {
+                    const target = alivePlayersLoop[Math.floor(Math.random() * alivePlayersLoop.length)];
+                    let dmg = Math.floor(enemy.p * (1 + (Math.random() * 0.2 - 0.1)));
+                    if (target.defBuff) dmg = Math.max(1, Math.floor(dmg * (1 - target.defBuff))); if (dmg < 1) dmg = 1;
+                    target.curH = Math.max(0, target.curH - dmg);
+                    logMsgs.push(`👹 邪鬼の行動(${i+1}/2): 通常攻撃！ ${target.name} に ${dmg} のダメージ！`);
+                    generatedEffects.push({ targetId: target.id, amount: dmg, type: 'normal', effectName: 'attack' });
+                }
+            }
+        } else {
+            const target = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
+            let dmg = Math.floor(enemy.p * (1 + (Math.random() * 0.2 - 0.1)));
+            if (target.defBuff) dmg = Math.max(1, Math.floor(dmg * (1 - target.defBuff))); if (dmg < 1) dmg = 1;
+            target.curH = Math.max(0, target.curH - dmg);
+            logMsgs.push(`👹 ${enemy.name} の攻撃！ ${target.name} に ${dmg} のダメージ！`);
+            generatedEffects.push({ targetId: target.id, amount: dmg, type: 'normal', effectName: 'attack' });
+        }
+
+        alivePlayers.forEach(p => { if(p.defBuff) p.defBuff = 0; });
+        let loopCount2 = 0;
+        do {
+            state.turnIndex = (state.turnIndex + 1) % state.queue.length;
+            let nextId = state.queue[state.turnIndex];
+            let nextUnit = [...state.party, ...state.enemies].find(u => String(u.id) === String(nextId));
+            loopCount2++;
+            if (nextUnit && nextUnit.curH > 0) break;
+        } while (loopCount2 < state.queue.length);
+
+        const roomRef = doc(db, "coop_rooms", window.currentCoopRoomId);
+        await updateDoc(roomRef, {
+            "battleState.party": state.party, "battleState.enemies": state.enemies, "battleState.turnIndex": state.turnIndex,
+            "battleState.log": arrayUnion(...logMsgs), "battleState.lastAction": { id: Date.now(), effects: generatedEffects }
+        });
+    };
+
+    // ④ 受信側でエフェクトを再生する
+    window.lastProcessedCoopActionId = null;
+    window.initCoopBattle = function() {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById('view-battle').classList.add('active');
+        document.getElementById('btn-retreat').style.display = "none"; 
+        document.getElementById('header-stage-label').innerText = `共闘作戦 討伐戦`;
+        if (typeof changeBGM === 'function') changeBGM("MusMus-BGM-095.mp3");
+
+        const roomRef = doc(db, "coop_rooms", window.currentCoopRoomId);
+        window.coopBattleUnsubscribe = onSnapshot(roomRef, (docSnap) => {
+            if (!docSnap.exists()) return;
+            const data = docSnap.data();
+
+            if (data.status === "playing" && data.battleState) {
+                window.coopBattleState = data.battleState;
+                party = data.battleState.party; enemies = data.battleState.enemies;
+
+                qIdx = data.battleState.turnIndex;
+                queue = data.battleState.queue.map(qid => [...party, ...enemies].find(u => String(u.id) === String(qid))).filter(Boolean);
+                const turnOrderEl = document.getElementById('turn-order');
+                if (turnOrderEl) turnOrderEl.innerText = queue.map(u => u.name).join(" > ");
+
+                const logDiv = document.getElementById('log');
+                if (logDiv) {
+                    logDiv.innerHTML = data.battleState.log.map(msg => `<div>${msg}</div>`).join('');
+                    logDiv.scrollTop = logDiv.scrollHeight;
+                }
+
+                // ★ ここで全プレイヤーの画面にエフェクトを同期再生！
+                if (data.battleState.lastAction && window.lastProcessedCoopActionId !== data.battleState.lastAction.id) {
+                    window.lastProcessedCoopActionId = data.battleState.lastAction.id;
+                    const effects = data.battleState.lastAction.effects || [];
+                    effects.forEach(eff => {
+                        if (typeof showDamageNumber === 'function') showDamageNumber(eff.targetId, eff.amount, eff.type);
+                        if (eff.effectName === 'attack') {
+                            const targetEl = document.getElementById(`unit-box-${eff.targetId}`);
+                            if (typeof playAttackEffect === 'function' && targetEl) playAttackEffect(targetEl);
+                            const attackSound = document.getElementById('se-attack');
+                            if (attackSound) { attackSound.currentTime = 0; attackSound.play().catch(e => console.log(e)); }
+                        } else if (eff.effectName === 'heal') {
+                            window.playGifEffect('tktk_Recovery_5.gif', eff.targetId, 1200);
+                        }
+                    });
+                }
+
+                if (typeof updateUI === 'function') updateUI();
+                window.checkCoopTurn();
+            }
+        });
     };
 </script>
 </body>
