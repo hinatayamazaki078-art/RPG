@@ -5596,16 +5596,13 @@ window.claimMarketCoins = async function() {
         }
 
         alert(`チャリンッ！🪙\n売上金 ${total} コインを財布に収めました！`);
-        window.updateMarketWalletDisplay();
-        if (currentMarketTab === 'mine') renderMarketMine();
-        updateHomeUI();
+        renderMarketMine();
     } catch (e) {
         console.error(e);
-        alert("精算処理中にエラーが発生しました。");
+        alert("回収エラーが発生しました。");
     }
 };
-
-    <script type="module">
+</script> <script type="module">
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
     import { getFirestore, updateDoc, doc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
     
@@ -5622,19 +5619,19 @@ window.claimMarketCoins = async function() {
     const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
     const db = getFirestore(app);
 
-    // ② 「誰を狙うか」の緑枠をしっかり表示させる修正
+    // ② 「誰を狙うか」の緑枠をしっかり表示させる修正（エラー対策強化）
     window.startCoopTargetSelection = function(type, skillName = null) {
         if (type === 'skill') {
             const isAoE = ['感電','咆哮','輝炎ノ息','虚影','鱗粉','御廚子','巨大触手','炎のブレス','伏魔御廚子','達磨さんが転んだ','ムチ','ブリザード','妖精の粉','攻撃増幅薬','蘇りの歌','強固な甲羅','天変地異','デスペラードヒューリー','支配','グレイデンスレイヴ','忘却の波動'].includes(skillName);
             if (isAoE) return window.executeCoopAction(null, 'skill', skillName);
         }
-        isSelecting = true; 
-        currentAction = (type === 'attack') ? "coop_attack" : "coop_skill"; 
+        window.isSelecting = true; 
+        window.currentAction = (type === 'attack') ? "coop_attack" : "coop_skill"; 
         
         if (type === 'attack') addLog("標的を選択してください（タップして決定）"); 
         else addLog(`【${skillName}】の対象を選択してください`);
         
-        updateUI(); // ← これにより緑色の選択枠が出るようになります！
+        if (typeof updateUI === 'function') updateUI(); // 緑色の選択枠を出す
     };
 
     // ③ UIのレイアウト崩れ防止 ＆ ターン進行の安定化
@@ -5665,7 +5662,7 @@ window.claimMarketCoins = async function() {
         const controls = document.getElementById('battle-controls');
         if (controls) {
             if (isMyTurn) {
-                controls.style.display = 'grid'; // ← ボタンレイアウトが崩れないように修正
+                controls.style.display = 'grid'; 
                 document.getElementById('btn-atk').onclick = () => window.startCoopTargetSelection('attack');
                 document.getElementById('btn-skl').onclick = () => window.showCoopSkillMenu();
                 addLog("【あなたのターンです！】コマンドを選択してください。");
@@ -5681,14 +5678,15 @@ window.claimMarketCoins = async function() {
 
     // ④ 小数点バグを防ぎ、攻撃が不発にならないようにする修正
     window.executeCoopAction = async function(targetId, type, skillName = null) {
-        isSelecting = false;
-        currentAction = null;
-        document.getElementById('battle-controls').style.display = 'none';
+        window.isSelecting = false;
+        window.currentAction = null;
+        const ctrl = document.getElementById('battle-controls');
+        if (ctrl) ctrl.style.display = 'none';
 
         const state = window.coopBattleState;
+        if (!state) return;
         const myActorId = state.queue[state.turnIndex];
         
-        // 文字列(String)にして確実にキャラを探す！
         const myActor = state.party.find(u => String(u.id) === String(myActorId));
         let target = targetId ? [...state.party, ...state.enemies].find(u => String(u.id) === String(targetId)) : null;
 
@@ -5719,7 +5717,6 @@ window.claimMarketCoins = async function() {
 
             logMsgs.push(`✨ ${myActor.name}：【${sName}】！`);
 
-            // 効果処理（各種スキル）
             if (sName === '回復' && target) {
                 let heal = Math.floor(myActor.p * 1.2);
                 target.curH = Math.min(target.maxH, target.curH + heal);
@@ -5766,15 +5763,16 @@ window.claimMarketCoins = async function() {
             if (nextUnit && nextUnit.curH > 0) break;
         } while (loopCount1 < state.queue.length);
 
-        const roomRef = doc(db, "coop_rooms", window.currentCoopRoomId);
-        await updateDoc(roomRef, {
-            "battleState.party": state.party,
-            "battleState.enemies": state.enemies,
-            "battleState.turnIndex": state.turnIndex,
-            "battleState.log": arrayUnion(...logMsgs)
-        });
+        if (window.currentCoopRoomId) {
+            const roomRef = doc(db, "coop_rooms", window.currentCoopRoomId);
+            await updateDoc(roomRef, {
+                "battleState.party": state.party,
+                "battleState.enemies": state.enemies,
+                "battleState.turnIndex": state.turnIndex,
+                "battleState.log": arrayUnion(...logMsgs)
+            });
+        }
     };
-        
 </script>
 </body>
 </html>
