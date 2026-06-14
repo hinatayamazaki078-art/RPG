@@ -5606,7 +5606,7 @@ window.claimMarketCoins = async function() {
 
 <script type="module">
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getFirestore, updateDoc, doc, arrayUnion, collection, addDoc, serverTimestamp, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+    import { getFirestore, updateDoc, doc, arrayUnion, collection, addDoc, serverTimestamp, onSnapshot, getDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
     
     const firebaseConfig = {
         apiKey: "AIzaSyD2v_krmy0L-lzvLF6_AdoeI5dbXyJr4JM",
@@ -5620,7 +5620,83 @@ window.claimMarketCoins = async function() {
     const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
     const db = getFirestore(app);
 
-    // ★追加: Gifエフェクトをキャラの上に再生する専用関数
+    // 【1】取引所（マーケット）のエラー修正
+    window.renderMarketBuy = async function() {
+        const container = document.getElementById('market-content-area');
+        container.innerHTML = "<div style='text-align:center; padding:20px; color:#ff0;'>市場の品物を探しています...</div>";
+        try {
+            const q = query(collection(db, "market_listings"), where("status", "==", "selling"));
+            const snap = await getDocs(q);
+            let items = [];
+            snap.forEach(docSnap => { items.push({ id: docSnap.id, ...docSnap.data() }); });
+            items.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
+            let html = "";
+            items.forEach(data => {
+                let statsText = "";
+                if (data.itemType === "relic" && data.itemObj) {
+                    statsText = `<br><span style="color:#ccc; font-size:9px;">P:${data.itemObj.p} H:${data.itemObj.h} M:${data.itemObj.m} S:${data.itemObj.s}</span>`;
+                }
+                html += `
+                <div style="border:1px solid #444; background:#111; padding:8px; border-radius:4px; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="color:#ff0; font-weight:bold; font-size:14px;">${data.itemName}</div>
+                        <div style="color:#aaa; font-size:10px;">出品者: ${data.sellerName}${statsText}</div>
+                    </div>
+                    <button onclick="window.buyMarketItem('${data.id}', '${data.itemName}', ${data.price}, '${data.itemType}')" style="background:#004; border:1px solid #00f; color:#fff; font-size:12px; padding:4px 8px; flex-shrink:0;">${data.price}枚で購入</button>
+                </div>`;
+            });
+            if (html === "") html = "<div style='text-align:center; color:#888; padding:20px;'>現在、出品されている商品はありません。</div>";
+            container.innerHTML = html;
+        } catch (e) {
+            console.error(e);
+            container.innerHTML = "<div style='color:red; text-align:center;'>読み込みエラーが発生しました</div>";
+        }
+    };
+
+    window.renderMarketMine = async function() {
+        const container = document.getElementById('market-content-area');
+        container.innerHTML = "<div style='text-align:center; padding:20px; color:#ff0;'>管理情報を取得中...</div>";
+        const playerName = document.getElementById('player-name').innerText;
+
+        try {
+            const q = query(collection(db, "market_listings"), where("sellerName", "==", playerName));
+            const snap = await getDocs(q);
+            let items = [];
+            snap.forEach(docSnap => { items.push({ id: docSnap.id, ...docSnap.data() }); });
+            items.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
+            let html = `<div style="font-size:12px; color:#ff0; margin-bottom:5px;">【あなたの出品状況】</div>`;
+            let count = 0;
+            
+            items.forEach(data => {
+                if (data.status === 'claimed') return; 
+                count++;
+                let statusHtml = "";
+                if (data.status === 'selling') {
+                    statusHtml = `<span style="color:#0ff;">販売中</span> <button onclick="window.cancelMarketItem('${data.id}')" style="background:#222; border:1px solid #555; color:#ccc; font-size:10px; padding:2px 4px; margin-left:5px;">回収</button>`;
+                } else if (data.status === 'sold') {
+                    statusHtml = `<span style="color:#ff0; font-weight:bold;">売却済 (未精算)</span>`;
+                }
+
+                html += `
+                <div style="border:1px dashed #555; background:#111; padding:6px; border-radius:4px; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="color:#fff; font-weight:bold; font-size:13px;">${data.itemName}</div>
+                        <div style="color:#aaa; font-size:10px;">価格: ${data.price} 枚</div>
+                    </div>
+                    <div style="font-size:12px;">${statusHtml}</div>
+                </div>`;
+            });
+            if (count === 0) html += "<div style='text-align:center; color:#888; padding:20px;'>現在、取引所で管理しているアイテムはありません。</div>";
+            container.innerHTML = html;
+        } catch (e) {
+            console.error(e);
+            container.innerHTML = "<div style='color:red; text-align:center;'>エラーが発生しました</div>";
+        }
+    };
+
+    // 【2】マルチプレイ＆エフェクト同期機能
     window.playGifEffect = function(gifUrl, targetId, duration = 1200) {
         const targetEl = document.getElementById(`unit-box-${targetId}`);
         if (!targetEl) return;
@@ -5638,7 +5714,6 @@ window.claimMarketCoins = async function() {
         setTimeout(() => { if (effectImg.parentNode) effectImg.parentNode.removeChild(effectImg); }, duration);
     };
 
-    // ① 部屋作成＆参加時に【遺物や武器ステータス】を完全反映させる
     window.createCoopRoom = async function() {
         const leaderId = selectedIds[0];
         const leaderChar = box.find(b => b.id === leaderId);
@@ -5674,7 +5749,7 @@ window.claimMarketCoins = async function() {
             { id: 8003, name: "赤鬼", p: 20, h: 180, maxH: 180, s: 12, m: 0, isP: false, curH: 180 }
         ];
         let partyData = roomData.members.map((m) => ({
-            ...m, isP: true, curH: m.maxH || m.h, curM: m.maxM || m.m || 0 // HP・MPを最大値から開始
+            ...m, isP: true, curH: m.maxH || m.h, curM: m.maxM || m.m || 0
         }));
         let allUnits = [...partyData, ...enemiesData];
         allUnits.sort((a, b) => b.s - a.s);
@@ -5686,7 +5761,6 @@ window.claimMarketCoins = async function() {
         });
     };
 
-    // ② ターゲット選択枠の表示
     window.startCoopTargetSelection = function(type, skillName = null) {
         if (type === 'skill') {
             const isAoE = ['感電','咆哮','輝炎ノ息','虚影','鱗粉','御廚子','巨大触手','炎のブレス','伏魔御廚子','達磨さんが転んだ','ムチ','ブリザード','妖精の粉','攻撃増幅薬','蘇りの歌','強固な甲羅','天変地異','デスペラードヒューリー','支配','グレイデンスレイヴ','忘却の波動'].includes(skillName);
@@ -5723,7 +5797,6 @@ window.claimMarketCoins = async function() {
         if (isEnemyTurn && window.isCoopHost) { setTimeout(() => { window.executeCoopEnemyTurn(currentActorId); }, 1500); }
     };
 
-    // ③ エフェクト情報を記録してサーバーへ送信する
     window.executeCoopAction = async function(targetId, type, skillName = null) {
         window.isSelecting = false; window.currentAction = null;
         const ctrl = document.getElementById('battle-controls'); if (ctrl) ctrl.style.display = 'none';
@@ -5874,7 +5947,6 @@ window.claimMarketCoins = async function() {
         });
     };
 
-    // ④ 受信側でエフェクトを再生する
     window.lastProcessedCoopActionId = null;
     window.initCoopBattle = function() {
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -5903,7 +5975,6 @@ window.claimMarketCoins = async function() {
                     logDiv.scrollTop = logDiv.scrollHeight;
                 }
 
-                // ★ ここで全プレイヤーの画面にエフェクトを同期再生！
                 if (data.battleState.lastAction && window.lastProcessedCoopActionId !== data.battleState.lastAction.id) {
                     window.lastProcessedCoopActionId = data.battleState.lastAction.id;
                     const effects = data.battleState.lastAction.effects || [];
