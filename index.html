@@ -1260,23 +1260,18 @@ function getWeaponBonus(wName) {
 
 // 上級霊気ガチャの処理
 function playPremiumAuraGacha() {
-    // 1. コインの現在地を確認して取得する
-    // このゲームのコイン表示要素から直接数字を読み取ります
-    const coinElement = document.getElementById('global-coin-count');
-    if (!coinElement) {
-        alert("コイン表示が見つかりません。");
-        return;
-    }
-    
-    let currentCoins = parseInt(coinElement.innerText.replace(/,/g, '')) || 0;
     const cost = 500;
-
-    if (currentCoins < cost) {
+    
+    // 1. コインが足りるかチェック（player.coinsを使用）
+    if (player.coins < cost) {
         alert("コインが足りません！");
         return;
     }
+    
+    // 2. コインを減らす（本体を減らす）
+    player.coins -= cost;
 
-    // 2. 確率処理
+    // 3. 確率計算
     const rand = Math.random();
     let r = 1;
     if (rand < 0.001) r = 7;
@@ -1289,24 +1284,17 @@ function playPremiumAuraGacha() {
 
     const premiumTypes = ['MP回復', '会心ダメ', '麻痺付与', '経験値増'];
     const type = premiumTypes[Math.floor(Math.random() * premiumTypes.length)];
-    const newAura = { type: type, r: r };
-
-    // 3. 霊気の追加（player.aurasに直接追加）
-    if (typeof player !== 'undefined' && player.auras) {
-        player.auras.push(newAura);
-    } else if (typeof auras !== 'undefined') {
-        auras.push(newAura);
-    }
-
-    // 4. コインを減らして画面に反映
-    currentCoins -= cost;
-    coinElement.innerText = currentCoins;
     
-    // 5. 保存とUI更新
-    if (typeof saveData === 'function') saveData();
-    if (typeof updateUI === 'function') updateUI();
+    // 4. 所持霊気リストに追加
+    if (!player.auras) player.auras = [];
+    player.auras.push({ type: type, r: r });
 
-    // 6. 成功メッセージ
+    // 5. 【最重要】データを保存して、画面表示を最新にする
+    saveData(); // データを保存
+    if (typeof updateUI === 'function') {
+        updateUI(); // 画面のコイン表示等を強制更新
+    }
+    
     alert(`【上級霊気】★${r} ${type} を獲得しました！`);
 }
         
