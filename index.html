@@ -1435,6 +1435,10 @@ function getSlotCost(type, currentSlots) {
         if (currentSlots === 1) return 1000;
         if (currentSlots === 2) return 2500;
         if (currentSlots === 3) return 5000;
+        if (currentSlots === 4) return 20000; // 5枠目
+        if (currentSlots === 5) return 30000; // 6枠目
+        if (currentSlots === 6) return 50000; // 7枠目
+        if (currentSlots === 7) return 80000; // 8枠目
     }
     return null; 
 }
