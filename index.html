@@ -2890,13 +2890,18 @@ function startTargetSelection(type, skillName = null) {
 }
 
 function onUnitClick(targetId) {
-    if (!isSelecting) return;
+    // ★修正1：共闘作戦の合図（window.isSelecting）もチェックするようにする
+    if (!isSelecting && !window.isSelecting) return;
+    
+    let act = currentAction || window.currentAction;
     
     // ▼ ここから書き換え（通常攻撃とスキルの分岐を追加）
-    if (currentAction === "coop_attack") {
+    if (act === "coop_attack") {
+        isSelecting = false; window.isSelecting = false; // ★修正2：タップした後に合図をリセット
         window.executeCoopAction(targetId, 'attack');
         return;
-    } else if (currentAction === "coop_skill") {
+    } else if (act === "coop_skill") {
+        isSelecting = false; window.isSelecting = false; // ★修正2：タップした後に合図をリセット
         window.executeCoopAction(targetId, 'skill', window.coopSelectedSkill);
         return;
     }
@@ -3461,7 +3466,8 @@ else if (isMakyouMode) {
 function updateUI() {
     const activeUnit = queue[qIdx];
     const draw = (u) => {
-        let classes = `char-box ${u.curH<=0?'dead':''} ${activeUnit && u.id===activeUnit.id?'active-unit':''}`; if (isSelecting) classes += ' selectable';
+        let classes = `char-box ${u.curH<=0?'dead':''} ${activeUnit && u.id===activeUnit.id?'active-unit':''}`; 
+        if (isSelecting || window.isSelecting) classes += ' selectable'; // ★修正：ここを書き換える
         
         let auraClass = ""; 
         let auraStyle = "";
