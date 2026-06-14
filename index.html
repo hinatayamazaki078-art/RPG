@@ -1261,49 +1261,46 @@ function getWeaponBonus(wName) {
 // 上級霊気ガチャの処理
 function playPremiumAuraGacha() {
     const cost = 500;
-    // コインが足りるかチェック（変数名 globalCoinCount 等はご自身の環境に合わせてください）
-    let currentCoins = parseInt(document.getElementById('global-coin-count').innerText) || 0;
-    if (currentCoins < cost) {
+    
+    // 【修正点】player.coins を使用します
+    if (player.coins < cost) {
         alert("コインが足りません！");
         return;
     }
     
     // コイン消費
-    currentCoins -= cost;
-    document.getElementById('global-coin-count').innerText = currentCoins;
-    // ※もし globalCoins 変数を使っている場合は globalCoins -= cost; も追加してください
+    player.coins -= cost;
 
-    // ご指定の排出確率（0.001 = 0.1%, 0.009 = 0.9% ...）
+    // 確率計算（そのまま）
     const rand = Math.random();
     let r = 1;
-    if (rand < 0.001) { r = 7; }                     // 0.1%
-    else if (rand < 0.010) { r = 6; }                // 0.9% (0.001 + 0.009)
-    else if (rand < 0.030) { r = 5; }                // 2.0% (0.010 + 0.020)
-    else if (rand < 0.070) { r = 4; }                // 4.0% (0.030 + 0.040)
-    else if (rand < 0.150) { r = 3; }                // 8.0% (0.070 + 0.080)
-    else if (rand < 0.300) { r = 2; }                // 15.0% (0.150 + 0.150)
-    else { r = 1; }                                  // 残り70%
+    if (rand < 0.001) r = 7;
+    else if (rand < 0.010) r = 6;
+    else if (rand < 0.030) r = 5;
+    else if (rand < 0.070) r = 4;
+    else if (rand < 0.150) r = 3;
+    else if (rand < 0.300) r = 2;
+    else r = 1;
 
-    // 上級霊気の中身（全て新霊気）
+    // 霊気の中身
     const premiumTypes = ['MP回復', '会心ダメ', '麻痺付与', '経験値増'];
     const type = premiumTypes[Math.floor(Math.random() * premiumTypes.length)];
     
-    // ガチャ結果の生成
     const newAura = { type: type, r: r };
     
-    // 所持オーラリストに追加 (変数名 myAuras は適宜ご自身の環境に合わせてください)
-    if(typeof myAuras !== 'undefined') {
-        myAuras.push(newAura);
-        if(typeof saveData === 'function') saveData();
-    }
+    // 【修正点】player.auras に追加します
+    if (!player.auras) player.auras = [];
+    player.auras.push(newAura);
 
-    // ガチャ演出の呼び出し（もし showGachaEffect という関数を使っている場合）
-    // 第一引数に配列、第二引数に種類を渡す想定
-    if(typeof showGachaEffect === 'function') {
+    // 【重要】保存と画面更新
+    saveData(); 
+    if (typeof updateUI === 'function') updateUI();
+
+    // 演出またはアラート
+    if (typeof showGachaEffect === 'function') {
         showGachaEffect([newAura], "aura");
     } else {
         alert(`【上級霊気】★${r} ${type} を獲得しました！`);
-        // 必要ならここで updateHomeUI() などを呼ぶ
     }
 }
         
