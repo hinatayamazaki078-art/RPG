@@ -5867,6 +5867,21 @@ window.claimMarketCoins = async function() {
             else if (sName === '精霊の歌') { state.party.forEach(p => { if (p.curH > 0) { p.curH = Math.min(p.maxH, p.curH + 100); generatedEffects.push({ targetId: p.id, amount: 100, type: 'heal', effectName: 'heal' }); } }); logMsgs.push(`🌱 味方全体のHPが 100 回復した！`); }
             else if (sName === '神の裁き' && target) { target.curH = Math.max(0, target.curH - 300); logMsgs.push(`⚡ ${target.name} に 300 の神罰ダメージ！`); generatedEffects.push({ targetId: target.id, amount: 300, type: 'crit', effectName: 'attack' }); }
             else if (sName === '極光' && target) { target.curH = Math.max(0, target.curH - 50); myActor.curH = Math.min(myActor.maxH, myActor.curH + 20); logMsgs.push(`✨ ${target.name} に 50 ダメージ、自身のHPを 20 回復！`); generatedEffects.push({ targetId: target.id, amount: 50, type: 'normal', effectName: 'attack' }); generatedEffects.push({ targetId: myActor.id, amount: 20, type: 'heal', effectName: 'heal' }); }
+            else if (sName === 'メテオ' && target) { target.curH = Math.max(0, target.curH - 35); logMsgs.push(`💥 ${target.name} に 35 の隕石ダメージ！`); generatedEffects.push({ targetId: target.id, amount: 35, type: 'normal', effectName: 'attack' }); }
+            else if (sName === '大回復' && target) { let heal = Math.floor(myActor.p * 2.5); target.curH = Math.min(target.maxH, target.curH + heal); logMsgs.push(`🌿 ${target.name} のHPが ${heal} 大きく回復した！`); generatedEffects.push({ targetId: target.id, amount: heal, type: 'heal', effectName: 'heal' }); }
+            else if (sName === 'マジ殴り' && target) { target.curH = Math.max(0, target.curH - 200); logMsgs.push(`👊 必殺のマジ殴り！ ${target.name} に 200 ダメージ！`); generatedEffects.push({ targetId: target.id, amount: 200, type: 'crit', effectName: 'attack' }); }
+            else if (sName === '連撃' && target) { let baseDmg = Math.floor(myActor.p * (1 + (myActor.atkBuff || 0))); target.curH = Math.max(0, target.curH - (baseDmg * 2)); logMsgs.push(`⚔️ 連続斬撃！ ${target.name} に ${baseDmg * 2} ダメージ！`); generatedEffects.push({ targetId: target.id, amount: baseDmg * 2, type: 'normal', effectName: 'attack' }); }
+            else if (sName === 'イーター' && target) { target.curH = Math.max(0, target.curH - 30); myActor.curH = Math.min(myActor.maxH, myActor.curH + 30); logMsgs.push(`👻 魂を喰らう！ 30ダメ＆30回復！`); generatedEffects.push({ targetId: target.id, amount: 30, type: 'normal', effectName: 'attack' }); generatedEffects.push({ targetId: myActor.id, amount: 30, type: 'heal', effectName: 'heal' }); }
+            else if (sName === '神の審判' && target) { let dmg = Math.random() < 0.5 ? 10 : 60; target.curH = Math.max(0, target.curH - dmg); logMsgs.push(`⚡ ${target.name} に ${dmg} の神罰ダメージ！`); generatedEffects.push({ targetId: target.id, amount: dmg, type: 'normal', effectName: 'attack' }); }
+            else if (sName === '丸呑み' && target) { target.curH = Math.max(0, target.curH - 15); logMsgs.push(`🐍 ${target.name} に 15 の固定ダメージ！`); generatedEffects.push({ targetId: target.id, amount: 15, type: 'normal', effectName: 'attack' }); }
+            // 【安全装置】上記以外の未知の攻撃スキルが使われた場合、空振りを防ぐために「通常攻撃と同じダメージ」を最低限与える
+            else if (target && sName !== '回復' && sName !== '全回復' && sName !== '妖精の粉' && sName !== '攻撃増幅薬' && sName !== '蘇りの歌' && sName !== '強固な甲羅' && sName !== '鉄壁' && sName !== '瞑想' && sName !== '精霊の歌') {
+                let fallbackDmg = Math.floor(myActor.p * (1 + (myActor.atkBuff || 0)));
+                if (fallbackDmg < 1) fallbackDmg = 1;
+                target.curH = Math.max(0, target.curH - fallbackDmg);
+                logMsgs.push(`⚔️ ${myActor.name} の ${sName}！ ${target.name} に ${fallbackDmg} ダメージ！`);
+                generatedEffects.push({ targetId: target.id, amount: fallbackDmg, type: 'normal', effectName: 'attack' });
+            }
             if (myActor.skillsList) { let sk = myActor.skillsList.find(s => s.name === sName); if (sk && sk.oncePerMatch) sk.used = true; }
         }
 
