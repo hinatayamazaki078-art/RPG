@@ -99,6 +99,36 @@
         .glow-回復 { animation: pulse-green 2s infinite ease-in-out; }
         @keyframes pulse-green { 0% { color: #d0ffd0; text-shadow: 0 0 6px rgba(0, 255, 128, 0.7), 0 0 12px rgba(0, 255, 128, 0.4); } 50% { color: #ffffff; text-shadow: 0 0 20px rgba(60, 255, 160, 1), 0 0 32px rgba(0, 200, 100, 0.8); } 100% { color: #d0ffd0; text-shadow: 0 0 6px rgba(0, 255, 128, 0.7), 0 0 12px rgba(0, 255, 128, 0.4); } }
 
+/* ▽ 新・上級霊気のエフェクト ▽ */
+        .glow-MP回復 { animation: pulse-cyan 2s infinite ease-in-out; }
+        @keyframes pulse-cyan { 
+            0% { color: #d0ffff; text-shadow: 0 0 6px rgba(0, 255, 255, 0.7), 0 0 12px rgba(0, 255, 255, 0.4); } 
+            50% { color: #ffffff; text-shadow: 0 0 20px rgba(0, 255, 255, 1), 0 0 32px rgba(0, 200, 200, 0.8); } 
+            100% { color: #d0ffff; text-shadow: 0 0 6px rgba(0, 255, 255, 0.7), 0 0 12px rgba(0, 255, 255, 0.4); } 
+        }
+
+        .glow-会心ダメ { animation: pulse-orange 2s infinite ease-in-out; }
+        @keyframes pulse-orange { 
+            0% { color: #ffd0a0; text-shadow: 0 0 6px rgba(255, 128, 0, 0.7), 0 0 12px rgba(255, 128, 0, 0.4); } 
+            50% { color: #ffffff; text-shadow: 0 0 20px rgba(255, 160, 0, 1), 0 0 32px rgba(255, 100, 0, 0.8); } 
+            100% { color: #ffd0a0; text-shadow: 0 0 6px rgba(255, 128, 0, 0.7), 0 0 12px rgba(255, 128, 0, 0.4); } 
+        }
+
+        .glow-麻痺付与 { animation: pulse-yellow 2s infinite ease-in-out; }
+        @keyframes pulse-yellow { 
+            0% { color: #ffffd0; text-shadow: 0 0 6px rgba(255, 255, 0, 0.7), 0 0 12px rgba(255, 255, 0, 0.4); } 
+            50% { color: #ffffff; text-shadow: 0 0 20px rgba(255, 255, 0, 1), 0 0 32px rgba(200, 200, 0, 0.8); } 
+            100% { color: #ffffd0; text-shadow: 0 0 6px rgba(255, 255, 0, 0.7), 0 0 12px rgba(255, 255, 0, 0.4); } 
+        }
+
+        .glow-経験値増 { animation: pulse-pink 2s infinite ease-in-out; }
+        @keyframes pulse-pink { 
+            0% { color: #ffd0d0; text-shadow: 0 0 6px rgba(255, 105, 180, 0.7), 0 0 12px rgba(255, 105, 180, 0.4); } 
+            50% { color: #ffffff; text-shadow: 0 0 20px rgba(255, 20, 147, 1), 0 0 32px rgba(200, 10, 100, 0.8); } 
+            100% { color: #ffd0d0; text-shadow: 0 0 6px rgba(255, 105, 180, 0.7), 0 0 12px rgba(255, 105, 180, 0.4); } 
+        }
+        /* △ 新・上級霊気のエフェクト △ */
+        
         .multi-aura { display: inline-block; background-size: 200% auto; animation: aura-shine 2s linear infinite; }
         @keyframes aura-shine { 0% { background-position: 0% center; } 100% { background-position: 200% center; } }
 
@@ -702,7 +732,7 @@
 </div>
         
         <button class="aura-btn" onclick="playAuraGacha()">霊気ガチャ<span>(30枚)</span></button>
-        <button class="aura-btn" style="background:#044; border-color:#0ff;" onclick="alert('上級霊気ガチャは現在準備中です！')">上級霊気ガチャ<span>(500枚)</span></button>
+        <button class="aura-btn" style="background:#044; border-color:#0ff;" onclick="playPremiumAuraGacha()">上級霊気ガチャ<span>(500枚)</span></button>
         <button class="skill-gacha-btn" onclick="playSkillGacha()">スキルガチャ<span>(20枚)</span></button>
         <button class="skill-gacha-btn" style="background:#005; border-color:#08f;" onclick="alert('上級スキルガチャは現在準備中です！')">上級スキルガチャ<span>(800枚)</span></button>
         <button class="gacha-btn" style="background:#022; border-color:#0cc;" onclick="playIconGacha()">アバターガチャ<span>(20枚)</span></button>
@@ -1141,6 +1171,42 @@ const auraSpecs = {
     '行動力': { 1: {val: 20, txt: "20%で2回行動"}, 2: {val: 30, txt: "30%で2回行動"}, 3: {val: 40, txt: "40%で2回行動"}, 4: {val: 50, txt: "50%で2回行動"}, 5: {val: 65, txt: "65%で2回行動"}, 6: {val: 80, txt: "80%で2回行動"} },
     '会心': { 1: {val: 20, txt: "会心20%"}, 2: {val: 30, txt: "会心30%"}, 3: {val: 40, txt: "会心40%"}, 4: {val: 60, txt: "会心60%"}, 5: {val: 80, txt: "会心80%"}, 6: {val: 100, txt: "会心100%"} },
     '回復': { 1: {val: 10, txt: "毎ターン10%"}, 2: {val: 15, txt: "毎ターン15%"}, 3: {val: 20, txt: "毎ターン20%"}, 4: {val: 30, txt: "毎ターン30%"}, 5: {val: 40, txt: "毎ターン40%"}, 6: {val: 50, txt: "毎ターン50%"} }
+'MP回復': {
+        1: {val: 1, txt: "攻撃時MP回復+1"},
+        2: {val: 2, txt: "攻撃時MP回復+2"},
+        3: {val: 3, txt: "攻撃時MP回復+3"},
+        4: {val: 5, txt: "攻撃時MP回復+5"},
+        5: {val: 8, txt: "攻撃時MP回復+8"},
+        6: {val: 12, txt: "攻撃時MP回復+12"},
+        7: {val: 20, txt: "攻撃時MP回復+20"}
+    },
+    '会心ダメ': {
+        1: {val: 1.2, txt: "会心ダメージ×1.2倍"},
+        2: {val: 1.4, txt: "会心ダメージ×1.4倍"},
+        3: {val: 1.6, txt: "会心ダメージ×1.6倍"},
+        4: {val: 1.8, txt: "会心ダメージ×1.8倍"},
+        5: {val: 2.0, txt: "会心ダメージ×2.0倍"},
+        6: {val: 2.5, txt: "会心ダメージ×2.5倍"},
+        7: {val: 3.0, txt: "会心ダメージ×3.0倍"}
+    },
+    '麻痺付与': {
+        1: {val: 5, txt: "攻撃時 麻痺5%"},
+        2: {val: 8, txt: "攻撃時 麻痺8%"},
+        3: {val: 12, txt: "攻撃時 麻痺12%"},
+        4: {val: 15, txt: "攻撃時 麻痺15%"},
+        5: {val: 18, txt: "攻撃時 麻痺18%"},
+        6: {val: 25, txt: "攻撃時 麻痺25%"},
+        7: {val: 35, txt: "攻撃時 麻痺35%"}
+    },
+    '経験値増': {
+        1: {val: 1, txt: "獲得経験値+1"},
+        2: {val: 2, txt: "獲得経験値+2"},
+        3: {val: 3, txt: "獲得経験値+3"},
+        4: {val: 5, txt: "獲得経験値+5"},
+        5: {val: 7, txt: "獲得経験値+7"},
+        6: {val: 10, txt: "獲得経験値+10"},
+        7: {val: 15, txt: "獲得経験値+15"}
+    }
 };
 
 const stageBaseData = [
@@ -1192,7 +1258,56 @@ function getWeaponBonus(wName) {
     return 2; 
 }
 
-function getNextUpgradeInfo(wName) { return weaponUpgradeSpecs.find(s => s.name === wName) || null; }
+// 上級霊気ガチャの処理
+function playPremiumAuraGacha() {
+    const cost = 500;
+    // コインが足りるかチェック（変数名 globalCoinCount 等はご自身の環境に合わせてください）
+    let currentCoins = parseInt(document.getElementById('global-coin-count').innerText) || 0;
+    if (currentCoins < cost) {
+        alert("コインが足りません！");
+        return;
+    }
+    
+    // コイン消費
+    currentCoins -= cost;
+    document.getElementById('global-coin-count').innerText = currentCoins;
+    // ※もし globalCoins 変数を使っている場合は globalCoins -= cost; も追加してください
+
+    // ご指定の排出確率（0.001 = 0.1%, 0.009 = 0.9% ...）
+    const rand = Math.random();
+    let r = 1;
+    if (rand < 0.001) { r = 7; }                     // 0.1%
+    else if (rand < 0.010) { r = 6; }                // 0.9% (0.001 + 0.009)
+    else if (rand < 0.030) { r = 5; }                // 2.0% (0.010 + 0.020)
+    else if (rand < 0.070) { r = 4; }                // 4.0% (0.030 + 0.040)
+    else if (rand < 0.150) { r = 3; }                // 8.0% (0.070 + 0.080)
+    else if (rand < 0.300) { r = 2; }                // 15.0% (0.150 + 0.150)
+    else { r = 1; }                                  // 残り70%
+
+    // 上級霊気の中身（全て新霊気）
+    const premiumTypes = ['MP回復', '会心ダメ', '麻痺付与', '経験値増'];
+    const type = premiumTypes[Math.floor(Math.random() * premiumTypes.length)];
+    
+    // ガチャ結果の生成
+    const newAura = { type: type, r: r };
+    
+    // 所持オーラリストに追加 (変数名 myAuras は適宜ご自身の環境に合わせてください)
+    if(typeof myAuras !== 'undefined') {
+        myAuras.push(newAura);
+        if(typeof saveData === 'function') saveData();
+    }
+
+    // ガチャ演出の呼び出し（もし showGachaEffect という関数を使っている場合）
+    // 第一引数に配列、第二引数に種類を渡す想定
+    if(typeof showGachaEffect === 'function') {
+        showGachaEffect([newAura], "aura");
+    } else {
+        alert(`【上級霊気】★${r} ${type} を獲得しました！`);
+        // 必要ならここで updateHomeUI() などを呼ぶ
+    }
+}
+        
+     function getNextUpgradeInfo(wName) { return weaponUpgradeSpecs.find(s => s.name === wName) || null; }
 function getBossHpMultiplier(name) {
     if (name === '大雀蜂') return 4; if (name === '大王烏賊') return 6;
     if (name === '達磨') return 10; if (name === '火竜') return 15;
