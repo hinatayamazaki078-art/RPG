@@ -3446,7 +3446,12 @@ else if (isMakyouMode) {
             if (stage > maxClearedStage) maxClearedStage = stage; saveData(); stage++; setTimeout(initBattle, 800);
         } return; 
     }
-    if (party.every(p => p.curH <= 0)) { addLog("全滅..."); setTimeout(()=>returnToHome(), 2000); return; }
+    if (party.every(p => p.curH <= 0)) {
+    addLog("全滅...");
+    isMakyouMode = false; // ★この1行を追加！魔境モードを強制終了する
+    setTimeout(()=>returnToHome(), 2000);
+    return;
+}
 
     remainingActions--;
     if (remainingActions > 0 && queue[qIdx] && queue[qIdx].curH > 0) { addLog("⚡ 連撃発動！（残り行動: " + remainingActions + "回）"); turn(); } 
