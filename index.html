@@ -5330,7 +5330,7 @@ async function renderMarketBuy() {
     const container = document.getElementById('market-content-area');
     container.innerHTML = "<div style='text-align:center; padding:20px; color:#ff0;'>市場の品物を探しています...</div>";
     try {
-        const q = query(collection(db, "market_listings"), where("status", "==", "selling"), orderBy("createdAt", "desc"));
+        const q = query(collection(db, "market_listings"), where("status", "==", "selling"));
         const snap = await getDocs(q);
         let html = "";
         
@@ -5505,7 +5505,7 @@ async function renderMarketMine() {
     const playerName = document.getElementById('player-name').innerText;
 
     try {
-        const q = query(collection(db, "market_listings"), where("sellerName", "==", playerName), orderBy("createdAt", "desc"));
+        const q = query(collection(db, "market_listings"), where("sellerName", "==", playerName));
         const snap = await getDocs(q);
         let html = `<div style="font-size:12px; color:#ff0; margin-bottom:5px;">【あなたの出品状況】</div>`;
         let count = 0;
