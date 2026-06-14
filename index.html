@@ -1260,18 +1260,23 @@ function getWeaponBonus(wName) {
 
 // 上級霊気ガチャの処理
 function playPremiumAuraGacha() {
-    const cost = 500;
-    
-    // 【修正点】player.coins を使用します
-    if (player.coins < cost) {
-        alert("コインが足りません！");
+    // 1. コインの現在地を確認して取得する
+    // このゲームのコイン表示要素から直接数字を読み取ります
+    const coinElement = document.getElementById('global-coin-count');
+    if (!coinElement) {
+        alert("コイン表示が見つかりません。");
         return;
     }
     
-    // コイン消費
-    player.coins -= cost;
+    let currentCoins = parseInt(coinElement.innerText.replace(/,/g, '')) || 0;
+    const cost = 500;
 
-    // 確率計算（そのまま）
+    if (currentCoins < cost) {
+        alert("コインが足りません！");
+        return;
+    }
+
+    // 2. 確率処理
     const rand = Math.random();
     let r = 1;
     if (rand < 0.001) r = 7;
@@ -1282,26 +1287,27 @@ function playPremiumAuraGacha() {
     else if (rand < 0.300) r = 2;
     else r = 1;
 
-    // 霊気の中身
     const premiumTypes = ['MP回復', '会心ダメ', '麻痺付与', '経験値増'];
     const type = premiumTypes[Math.floor(Math.random() * premiumTypes.length)];
-    
     const newAura = { type: type, r: r };
-    
-    // 【修正点】player.auras に追加します
-    if (!player.auras) player.auras = [];
-    player.auras.push(newAura);
 
-    // 【重要】保存と画面更新
-    saveData(); 
+    // 3. 霊気の追加（player.aurasに直接追加）
+    if (typeof player !== 'undefined' && player.auras) {
+        player.auras.push(newAura);
+    } else if (typeof auras !== 'undefined') {
+        auras.push(newAura);
+    }
+
+    // 4. コインを減らして画面に反映
+    currentCoins -= cost;
+    coinElement.innerText = currentCoins;
+    
+    // 5. 保存とUI更新
+    if (typeof saveData === 'function') saveData();
     if (typeof updateUI === 'function') updateUI();
 
-    // 演出またはアラート
-    if (typeof showGachaEffect === 'function') {
-        showGachaEffect([newAura], "aura");
-    } else {
-        alert(`【上級霊気】★${r} ${type} を獲得しました！`);
-    }
+    // 6. 成功メッセージ
+    alert(`【上級霊気】★${r} ${type} を獲得しました！`);
 }
         
      function getNextUpgradeInfo(wName) { return weaponUpgradeSpecs.find(s => s.name === wName) || null; }
