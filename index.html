@@ -1166,7 +1166,11 @@ const SKILL_DATA = {
     "仙撃・鬼鮫": { cost: 20 },
     "煉獄ノ炎": { cost: 35 },
     "アストラルブレイド": { cost: 30 },
-    "スロウバイト": { cost: 20 }
+    "スロウバイト": { cost: 20 },
+    "狂乱": { cost: 0 },
+    "マジックアロー": { cost: 20 },
+    "真・デスペラードヒューリー": { cost: 40 },
+    "ミカエルの加護": { cost: 0 }
 };
 
 const auraTypes = ['回避', '行動力', '会心', '回復'];
@@ -3276,8 +3280,131 @@ let isCrit = false;
                 addLog(`🦇 ${u.name}のスロウバイト！ ${t.name}に ${dmg} ダメージを与え、素早さを10下げた！`);
             }
         }
+
+else if (sName === '狂乱') {
+            // ① 自分自身（u.id）にエフェクトを再生
+            if (typeof window.playGifEffect === 'function') {
+                window.playGifEffect('EF.狂乱.gif', u.id, 1000);
+            }
+            
+            // ② 現在HPの90%を消費する（死なないように最低1は残す）
+            let costHp = Math.floor(u.curH * 0.9);
+            if (costHp >= u.curH) costHp = u.curH - 1; // HP全損防止
+            
+            if (costHp > 0) {
+                u.curH -= costHp;
+                // 消費したHPをダメージっぽく赤文字で表示
+                showDamageNumber(u.id, costHp, 'normal'); 
+            }
+            
+            // ③ 攻撃力を5倍にする
+            // ダメージ計算が「ベース攻撃力 * (1 + atkBuff)」なので、atkBuffを 4 にすると「1+4 = 5倍」になります。
+            u.atkBuff = 4;
+            
+            addLog(`💢 ${u.name}は狂乱状態に陥った！自身のHPを激しく消耗し、攻撃力が劇的に上昇！`);
+        }
+            
+        else if (sName === 'マジックアロー') {
+            // ① 全体攻撃用エフェクトの再生
+            if (typeof window.playGifEffect === 'function') {
+                window.playGifEffect('EF.マジックアロー.gif', 'all', 1200);
+            }
+            
+            // ② 自身の攻撃力の80%を計算（最低1ダメージ）
+            let dmg = Math.floor(u.p * (1 + (u.atkBuff || 0)) * 0.8);
+            if (dmg < 1) dmg = 1;
+
+            // ③ 敵全体に対してダメージ処理
+            targets.forEach(e => {
+                if (e.curH > 0) {
+                    if (e.invincible <= 0) {
+                        e.curH = Math.max(0, e.curH - dmg);
+                        showDamageNumber(e.id, dmg, 'normal');
+                        checkAndRevivePhoenix(e);
+                    } else {
+                        showDamageNumber(e.id, 0, 'miss');
+                    }
+                }
+            });
+
+            addLog(`🏹 ${u.name}のマジックアロー！敵全体に魔法の矢が降り注ぎ、 ${dmg} ダメージ！`);
+        }
+
+else if (sName === '真・デスペラードヒューリー') {
+            // ① 自身の現在HPの20%を消費（死なないように最低1は残す）
+            let costHp = Math.floor(u.curH * 0.20);
+            if (costHp >= u.curH) costHp = u.curH - 1;
+            
+            if (costHp > 0) {
+                u.curH -= costHp;
+                showDamageNumber(u.id, costHp, 'normal'); // 代償をダメージっぽく表示
+            }
+            
+            // ② 攻撃力の30%を計算（最低1ダメージ）
+            let baseDmg = Math.floor(u.p * (1 + (u.atkBuff || 0)) * 0.30);
+            if (baseDmg < 1) baseDmg = 1;
+
+            let count = 0;
+            const hit = () => {
+                // 生きている敵をリストアップ
+                const alive = targets.filter(e => e.curH > 0);
+                if (alive.length === 0) return;
+                
+                // ランダムにターゲットを1体選ぶ
+                const trg = alive[Math.floor(Math.random() * alive.length)];
+                
+                // ③ 1発ごとに選ばれた敵の場所にエフェクトを再生！
+                // 20回という超連撃なので、重なりすぎないよう表示時間は短めの「400」ミリ秒
+                if (typeof window.playGifEffect === 'function') {
+                    window.playGifEffect('EF.真・デスぺ.gif', trg.id, 400);
+                }
+                
+                if (trg.invincible <= 0) {
+                    trg.curH = Math.max(0, trg.curH - baseDmg);
+                    showDamageNumber(trg.id, baseDmg, 'normal');
+                    checkAndRevivePhoenix(trg);
+                } else {
+                    showDamageNumber(trg.id, 0, 'miss');
+                }
+                
+                count++;
+                // 20回に達するまで、0.1秒(100ミリ秒)の超ハイペースで再度攻撃
+                if (count < 20 && targets.some(e => e.curH > 0)) setTimeout(hit, 100);
+            };
+            
+            hit();
+            addLog(`💥 ${u.name}の真・デスペラードヒューリー！！自らの血を滾らせ、 ${baseDmg} ダメージの怒涛の20連撃！！`);
+        }
         
-        else if (sName === '仙撃・鬼鮫' && t) { // ← target を t に修正
+        else if (sName === 'ミカエルの加護') {
+            // ① 自分以外の生きている味方をリストアップ
+            const aliveAllies = allies.filter(a => a.id !== u.id && a.curH > 0);
+            
+            if (aliveAllies.length === 0) {
+                // 犠牲にできる味方がいない場合は不発
+                addLog(`👼 ${u.name}はミカエルの加護を唱えたが、捧げるべき味方がいなかった！`);
+            } else {
+                // ② ランダムに味方を1体選んで犠牲（HP 0）にする
+                const targetAlly = aliveAllies[Math.floor(Math.random() * aliveAllies.length)];
+                targetAlly.curH = 0;
+                showDamageNumber(targetAlly.id, 'SACRIFICE', 'normal'); // 犠牲になった表示
+                
+                // ③ 自身に神々しいエフェクトを再生（1.5秒）
+                if (typeof window.playGifEffect === 'function') {
+                    window.playGifEffect('EF.ミカエル_2.gif', u.id, 1500);
+                }
+                
+                // ④ 自身の全ステータス（攻撃力、素早さ、最大HP、現在HP）を試合終了まで2倍に！
+                u.p *= 2;
+                u.s *= 2;
+                u.maxH *= 2;
+                u.curH *= 2; // 現在HPも倍になるので、実質大回復にもなります
+                
+                addLog(`👼 禁忌解放！ ${u.name}はミカエルの加護により、${targetAlly.name}の命と引き換えに全ステータスが2倍に跳ね上がった！！`);
+            }
+        }
+
+                                              else if (sName === '仙撃・鬼鮫' && t) { // ← target を t に修正
             if (t.invincible > 0) {
                 showDamageNumber(t.id, 0, 'miss');
                 addLog("無効！");
