@@ -4134,6 +4134,15 @@ function applyGiftCode() {
         return;
     }
 
+    if (code === '09hi') {
+        coins += 100000;
+        if (typeof saveData === 'function') saveData();
+        if (typeof updateHomeUI === 'function') updateHomeUI();
+        alert("🎁 コード認証成功！\n100,000コインを獲得しました！");
+        input.value = "";
+        return;
+    }
+
     // 🌟 以下、元々あった既存のギフトコード処理
     if (code === '4649') {
         // 重複受け取り防止チェック
