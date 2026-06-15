@@ -927,6 +927,7 @@ document.body.addEventListener('click', function() {
     if (typeof updateHomeUI === 'function') {
         updateHomeUI();
     }
+        isMakyouMode = false;
 }
 // ↓他の定数（const SKILL_DATA など）の近くにこれを追加してください
 const ICON_DATA = [
@@ -2752,6 +2753,7 @@ function setupBattleData(arr, isP) {
 function selectStageRange(start, end) {
     document.getElementById('view-stage-select').classList.remove('active'); document.getElementById('view-battle').classList.add('active'); document.getElementById('btn-retreat').style.display = "block";
     isBossMode = false; isDigMode = false; isShadowMode = false; isShadowKingMode = false; remainingActions = 0; darumaTrigger = null; isGlobalDomination = false;
+    isMakyouMode = false;
     party = setupBattleData(selectedIds.map(sid => box.find(b => b.id === sid)), true); stage = start; currentEndStage = end; initBattle();
 }
 function startBossBattle(name) {
@@ -3926,7 +3928,8 @@ function openMakyouSelection() {
 }
 function closeMakyouSelection() { 
     document.getElementById('view-makyou-select').classList.remove('active'); 
-    document.getElementById('view-home').classList.add('active'); 
+    document.getElementById('view-home').classList.add('active');
+    isMakyo = false;
 }
 
 // --- 魔境探索のデータ ---
