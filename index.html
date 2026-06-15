@@ -1164,7 +1164,9 @@ const SKILL_DATA = {
     "グレイデンスレイヴ": { cost: 0 }, "輝炎ノ息": { cost: 30 }, "虚影": { cost: 20 },
     "忘却の波動": { cost: 30 },
     "仙撃・鬼鮫": { cost: 20 },
-    "煉獄ノ炎": { cost: 35 }
+    "煉獄ノ炎": { cost: 35 },
+    "アストラルブレイド": { cost: 30 },
+    "スロウバイト": { cost: 20 }
 };
 
 const auraTypes = ['回避', '行動力', '会心', '回復'];
@@ -3248,6 +3250,33 @@ let isCrit = false;
             });
             addLog(`🔥 ${u.name}の煉獄ノ炎！敵全体に ${dmg} の大ダメージ！`);
         }
+        
+        else if (sName === 'スロウバイト' && t) {
+            if (t.invincible > 0) {
+                showDamageNumber(t.id, 0, 'miss');
+                addLog("無効！");
+            } else {
+                // エフェクトを対象の場所に再生（噛みつきなので少し短めの800ミリ秒に設定）
+                if (typeof window.playGifEffect === 'function') {
+                    window.playGifEffect('EF.スロウバイト.gif', t.id, 800);
+                }
+                
+                // 攻撃力の50%を計算（最低1ダメージ）
+                let dmg = Math.floor(u.p * (1 + (u.atkBuff || 0)) * 0.5);
+                if (dmg < 1) dmg = 1;
+
+                // ダメージ処理
+                t.curH = Math.max(0, t.curH - dmg);
+                showDamageNumber(t.id, dmg, 'normal');
+                checkAndRevivePhoenix(t);
+                
+                // 素早さダウン処理
+                t.s -= 10;
+                
+                addLog(`🦇 ${u.name}のスロウバイト！ ${t.name}に ${dmg} ダメージを与え、素早さを10下げた！`);
+            }
+        }
+        
         else if (sName === '仙撃・鬼鮫' && t) { // ← target を t に修正
             if (t.invincible > 0) {
                 showDamageNumber(t.id, 0, 'miss');
@@ -3273,6 +3302,44 @@ let isCrit = false;
                 addLog(`🦈 ${u.name}の仙撃・鬼鮫！ ${t.name}に ${baseDmg} ダメージの3連撃！`);
             }
         } // ← ★この閉じるカッコを追加しました！
+        
+        else if (sName === 'アストラルブレイド') {
+            // 攻撃力の35%を計算（最低1ダメージ）
+            let baseDmg = Math.floor(u.p * (1 + (u.atkBuff || 0)) * 0.35);
+            if (baseDmg < 1) baseDmg = 1;
+
+            let count = 0;
+            const hit = () => {
+                // 生きている敵をリストアップ
+                const alive = targets.filter(e => e.curH > 0);
+                if (alive.length === 0) return;
+                
+                // ランダムにターゲットを1体選ぶ
+                const trg = alive[Math.floor(Math.random() * alive.length)];
+                
+                // ★【変更点】1発ごとに、選ばれた敵の場所にエフェクトを再生！
+                // 連撃の間隔が0.15秒と短いので、表示時間は短めの「600」ミリ秒くらいがテンポよくてオススメです。
+                if (typeof window.playGifEffect === 'function') {
+                    window.playGifEffect('EF.アストラルブレイド.gif', trg.id, 600);
+                }
+                
+                if (trg.invincible <= 0) {
+                    trg.curH = Math.max(0, trg.curH - baseDmg);
+                    showDamageNumber(trg.id, baseDmg, 'normal');
+                    checkAndRevivePhoenix(trg);
+                } else {
+                    showDamageNumber(trg.id, 0, 'miss');
+                }
+                
+                count++;
+                // 8回に達するまで、0.15秒(150ミリ秒)後に再度攻撃
+                if (count < 8 && targets.some(e => e.curH > 0)) setTimeout(hit, 150);
+            };
+            
+            hit();
+            addLog(`✨ ${u.name}のアストラルブレイド！ランダムな敵に ${baseDmg} ダメージの8連撃！`);
+        }
+        
         else if (sName === '虚影') { 
             allies.forEach(a => { 
                 if(a.curH>0) a.evasionBuff = 3; 
