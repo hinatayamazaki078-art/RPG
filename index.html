@@ -3038,7 +3038,12 @@ function onUnitClick(targetId) {
     
 function executeAction(u, t, type, skillName = null) {
     if (type === 'attack') {
-       u.curM += 3;
+       let mpHeal = 3;
+       if (u.auras) {
+           const mpAu = u.auras.find(a => a.type === 'MP回復');
+           if (mpAu) mpHeal += mpAu.value;
+       }
+       u.curM += mpHeal;
 
         if (u.blind > 0 && Math.random() < 0.3) { 
             addLog("💫【閃光】" + u.name + "の攻撃は外れた！ (MP+3)"); 
@@ -3070,7 +3075,13 @@ if (isGlobalDomination) dmg = Math.ceil(dmg / 2);
 let isCrit = false; 
         if (u.auras) {
             const critAu = u.auras.find(a => a.type === '会心');
-            if (critAu && Math.random() * 100 < critAu.value) { dmg *= 2; isCrit = true; }
+            if (critAu && Math.random() * 100 < critAu.value) { 
+                dmg *= 2; 
+                isCrit = true; 
+                // ▼ 会心ダメの処理を追加
+                const critDmgAu = u.auras.find(a => a.type === '会心ダメ');
+                if (critDmgAu) dmg = Math.floor(dmg * critDmgAu.value);
+            }
         }
         if (t.guard) dmg = 1;
         t.curH = Math.max(0, t.curH - dmg); u.lastDmg = dmg;
@@ -3087,7 +3098,18 @@ let isCrit = false;
         // ★追加：ここでダメージ数値を表示
         showDamageNumber(t.id, dmg, isCrit ? 'crit' : 'normal');
 
-        if (isCrit) addLog("💥" + u.name + "の会心の一撃：" + dmg + "ダメ (MP+3)"); else addLog(u.name + "の攻撃：" + dmg + "ダメ (MP+3)");
+        let mpMsg = `(MP+${mpHeal})`; // 上で作ったmpHealの変数を使います
+        if (isCrit) addLog("💥" + u.name + "の会心の一撃：" + dmg + "ダメ " + mpMsg); else addLog(u.name + "の攻撃：" + dmg + "ダメ " + mpMsg);
+
+        // ▼ 麻痺付与の処理を追加
+        if (u.auras && t.curH > 0) {
+            const paralyzeAu = u.auras.find(a => a.type === '麻痺付与');
+            if (paralyzeAu && Math.random() * 100 < paralyzeAu.value) {
+                t.paralyze = 1;
+                addLog(`⚡【麻痺付与】${u.name}の攻撃で${t.name}が麻痺した！`);
+            }
+        }
+
         checkAndRevivePhoenix(t);
     } else { // ← ★ここが重要！通常攻撃（if）が終わり、ここからスキル（else）の処理になります
         const sName = skillName || u.skill; // ← ★これも必要です！
@@ -3558,7 +3580,13 @@ function closeGugenkaModal() {
                 // パーティの元データをboxから探す
                 const orgUnit = box.find(b => b.id === pUnit.id);
                 if (orgUnit) {
-                    const didLevelUp = gainUnitExp(orgUnit, gainedExp);
+                    let finalExp = gainedExp;
+                    // ▼ 経験値増の処理を追加
+                    if (pUnit.auras) {
+                        const expAu = pUnit.auras.find(a => a.type === '経験値増');
+                        if (expAu) finalExp += expAu.value;
+                    }
+                    const didLevelUp = gainUnitExp(orgUnit, finalExp);
                     if (didLevelUp) levelUpLogs.push(`${orgUnit.name}がLv.${orgUnit.lv}にUP!`);
                 }
             });
