@@ -3203,64 +3203,58 @@ let isCrit = false;
              } 
          }); 
          addLog("灼熱の輝炎！全体に60ダメージ！"); 
-     }
-            else if (sName === '煉獄ノ炎') {
+        }
+        else if (sName === '煉獄ノ炎') {
             // ① 全体攻撃用エフェクトの再生
             if (typeof window.playGifEffect === 'function') {
-                // 全体攻撃なので、ターゲット指定なし（または画面全体指定）で再生
                 window.playGifEffect('EF.煉獄ノ炎.gif', 'all', 1500);
             }
-
             // ② 敵全体に対して攻撃力の150%ダメージ
             let dmg = Math.floor(u.p * (1 + (u.atkBuff || 0)) * 1.5);
-            
-            // 敵リスト全員にダメージを与える処理（ゲームの敵配列に合わせてください）
-            enemies.forEach(enemy => {
-                if (enemy.curH > 0) {
-                    enemy.curH = Math.max(0, enemy.curH - dmg);
-                    showDamageNumber(enemy.id, dmg, 'fire'); // 炎属性の演出など
-                    checkAndRevivePhoenix(enemy);
+            targets.forEach(e => {
+                if (e.curH > 0) {
+                    if (e.invincible <= 0) {
+                        e.curH = Math.max(0, e.curH - dmg);
+                        showDamageNumber(e.id, dmg, 'normal'); 
+                        checkAndRevivePhoenix(e);
+                    } else {
+                        showDamageNumber(e.id, 0, 'miss');
+                    }
                 }
             });
-
             addLog(`🔥 ${u.name}の煉獄ノ炎！敵全体に ${dmg} の大ダメージ！`);
         }
-            else if (sName === '仙撃・鬼鮫' && target) {
-            if (target.invincible > 0) {
-                showDamageNumber(target.id, 0, 'miss');
+        else if (sName === '仙撃・鬼鮫' && t) { // ← target を t に修正
+            if (t.invincible > 0) {
+                showDamageNumber(t.id, 0, 'miss');
                 addLog("無効！");
             } else {
-                // ① エフェクトGIFの再生 (約1.2秒間表示)
                 if (typeof window.playGifEffect === 'function') {
-                    window.playGifEffect('EF.鬼鮫.gif', target.id, 1200);
+                    window.playGifEffect('EF.鬼鮫.gif', t.id, 1200);
                 }
-
-                // ② 攻撃力の80%を計算
                 let baseDmg = Math.floor(u.p * (1 + (u.atkBuff || 0)) * 0.8);
-                if (baseDmg < 1) baseDmg = 1; // 最低1ダメージ保証
+                if (baseDmg < 1) baseDmg = 1;
 
-                // ③ 3連撃の処理（時間差でポン、ポン、ポンとダメージ表示）
                 let count = 0;
                 const hit = () => {
-                    if (target.curH > 0) {
-                        target.curH = Math.max(0, target.curH - baseDmg);
-                        showDamageNumber(target.id, baseDmg, 'normal');
-                        checkAndRevivePhoenix(target);
+                    if (t.curH > 0) {
+                        t.curH = Math.max(0, t.curH - baseDmg);
+                        showDamageNumber(t.id, baseDmg, 'normal');
+                        checkAndRevivePhoenix(t);
                     }
                     count++;
-                    // 0.2秒(200ミリ秒)間隔で3回繰り返す
-                    if (count < 3 && target.curH > 0) setTimeout(hit, 200); 
+                    if (count < 3 && t.curH > 0) setTimeout(hit, 200); 
                 };
                 hit();
-
-                addLog(`🦈 ${u.name}の仙撃・鬼鮫！ ${target.name}に ${baseDmg} ダメージの3連撃！`);
+                addLog(`🦈 ${u.name}の仙撃・鬼鮫！ ${t.name}に ${baseDmg} ダメージの3連撃！`);
             }
-     else if (sName === '虚影') { 
-         allies.forEach(a => { 
-             if(a.curH>0) a.evasionBuff = 3; 
-         }); 
-         addLog("虚無の影が包み込む！味方全員の回避率が大幅アップ！(3ターン)"); 
-     }
+        } // ← ★この閉じるカッコを追加しました！
+        else if (sName === '虚影') { 
+            allies.forEach(a => { 
+                if(a.curH>0) a.evasionBuff = 3; 
+            }); 
+            addLog("虚無の影が包み込む！味方全員の回避率が大幅アップ！(3ターン)"); 
+        }
         else if (sName === '忘却の波動') {
             targets.forEach(e => {
                 if(e.curH > 0) {
