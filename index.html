@@ -734,7 +734,7 @@
         <button class="aura-btn" onclick="playAuraGacha()">霊気ガチャ<span>(30枚)</span></button>
         <button class="aura-btn" style="background:#044; border-color:#0ff;" onclick="playPremiumAuraGacha()">上級霊気ガチャ<span>(500枚)</span></button>
         <button class="skill-gacha-btn" onclick="playSkillGacha()">スキルガチャ<span>(20枚)</span></button>
-        <button class="skill-gacha-btn" style="background:#005; border-color:#08f;" onclick="alert('上級スキルガチャは現在準備中です！')">上級スキルガチャ<span>(800枚)</span></button>
+        <button class="skill-gacha-btn" style="background:#005; border-color:#08f;" onclick="playAdvancedSkillGacha()">上級スキルガチャ<span>(800枚)</span></button>
         <button class="gacha-btn" style="background:#022; border-color:#0cc;" onclick="playIconGacha()">アバターガチャ<span>(20枚)</span></button>
         <button class="gacha-btn" style="background:#404; border-color:#f0f;" onclick="playCrystalGacha()">具現ガチャ<span>(5万枚)</span></button>
     </div>
@@ -1994,6 +1994,86 @@ function playSkillGacha() {
                 <div style="font-size:9px; color:#ccc;">${skillCost > 0 ? (skillName==='捨て身'?'HP':'MP')+'消費:'+skillCost : '特殊消費'}</div>
             </div>`;
             document.getElementById('gacha-close-btn').style.display = 'block'; saveData();
+        }
+    }, 40);
+}
+
+        function playAdvancedSkillGacha() {
+    const cost = 800;
+    if (coins < cost) return alert(`コインが不足しています！（必要コイン: ${cost}枚）`);
+    coins -= cost; 
+    document.getElementById('global-coin-count').innerText = coins;
+    
+    // ガチャ画面を開く
+    openGachaOverlay("上級技能抽出中...");
+    const display = document.getElementById('gacha-kanji-display');
+    const resultName = document.getElementById('gacha-result-name');
+    const resultList = document.getElementById('gacha-result-list');
+    
+    // 演出用のレア度クラスをリセット
+    display.classList.remove('rarity-high', 'rarity-god', 'rarity-god7');
+    
+    let count = 0;
+    const interval = setInterval(() => {
+        display.innerText = "極"; 
+        count++;
+        
+        if (count > 15) {
+            clearInterval(interval);
+            const roll = Math.random() * 100;
+            let pool = [], r = 1;
+            
+            // ★ご指定の超シビアな確率テーブル★
+            if (roll < 80.0) {
+                // 【80%】★1
+                pool = ["回復", "閃光", "斬撃", "ムチ", "大回復", "麻痺", "捨て身", "応援", "狂乱"];
+                r = 1;
+            } else if (roll < 93.0) {
+                // 【13%】★2
+                pool = ["スロウバイト", "マジックアロー"];
+                r = 2;
+            } else if (roll < 98.0) {
+                // 【5%】★3
+                pool = ["攻撃増幅薬", "ブリザード", "支配", "妖精の粉", "メテオ", "煉獄ノ炎", "仙撃・鬼鮫", "忘却の波動"];
+                r = 3;
+            } else if (roll < 99.0) {
+                // 【1%】★4
+                pool = ["アストラルブレイド"];
+                r = 4;
+            } else if (roll < 99.8) {
+                // 【0.8%】★5
+                pool = ["デストラップ", "フェニックス", "蘇りの歌", "強固な甲羅"];
+                r = 5;
+            } else if (roll < 99.975) {
+                // 【0.175%】★6
+                pool = ["真・デスペラードヒューリー"];
+                r = 6;
+            } else {
+                // 【0.025%】★7
+                pool = ["天変地異", "デスペラードヒューリー", "精霊の歌", "ミカエルの加護", "グレイデンスレイヴ", "輝炎ノ息", "虚影"];
+                r = 7;
+            }
+
+            const skillName = pool[Math.floor(Math.random() * pool.length)];
+            const skillCost = SKILL_DATA[skillName] ? SKILL_DATA[skillName].cost : 0;
+            
+            seeds.push({ name: skillName, cost: skillCost });
+            
+            display.innerText = "技";
+            if (r >= 7) display.classList.add('rarity-god7'); 
+            else if (r >= 5) display.classList.add('rarity-god'); 
+            else if (r >= 3) display.classList.add('rarity-high');
+            
+            resultName.innerText = "上級スキル獲得！";
+            resultList.innerHTML = `<div class="gacha-res-item" style="width:140px; height:80px; color:${r>=5?'#f0f':(r>=3?'#ff0':'#0ff')}; border-color:${r>=5?'#f0f':(r>=3?'#ff0':'#0aa')};">
+                <span class="rarity">${'★'.repeat(r)}</span>
+                <div style="font-size:16px; font-weight:bold; margin-top:8px;">${skillName}</div>
+                <div style="font-size:9px; color:#ccc;">${skillCost > 0 ? (skillName==='捨て身'?'HP':'MP')+'消費:'+skillCost : '特殊消費'}</div>
+            </div>`;
+            
+            document.getElementById('gacha-close-btn').style.display = 'inline-block';
+            if (typeof saveData === 'function') saveData();
+            if (typeof updateHomeUI === 'function') updateHomeUI();
         }
     }, 40);
 }
