@@ -1262,14 +1262,16 @@ function getWeaponBonus(wName) {
 function playPremiumAuraGacha() {
     const cost = 500;
     
-    // 1. コインが足りるかチェック（player.coinsを使用）
-    if (player.coins < cost) {
+    // 1. コインが足りるかチェック（グローバル変数の coins を使用）
+    if (coins < cost) {
         alert("コインが足りません！");
         return;
     }
     
-    // 2. コインを減らす（本体を減らす）
-    player.coins -= cost;
+    // 2. コインを減らす
+    coins -= cost;
+    // 画面のコイン表示もこの時点で更新しておく
+    document.getElementById('global-coin-count').innerText = coins;
 
     // 3. 確率計算
     const rand = Math.random();
@@ -1285,15 +1287,23 @@ function playPremiumAuraGacha() {
     const premiumTypes = ['MP回復', '会心ダメ', '麻痺付与', '経験値増'];
     const type = premiumTypes[Math.floor(Math.random() * premiumTypes.length)];
     
-    // 4. 所持霊気リストに追加
-    if (!player.auras) player.auras = [];
-    player.auras.push({ type: type, r: r });
+    // 4. オーラの詳細データ（効果値やテキスト）を取得
+    const spec = auraSpecs[type][r];
+    
+    // 5. 所持霊気リスト（グローバル変数の auras）に追加
+    // 装備処理が正しく動くように、id や text のデータも含めます
+    const newAura = { 
+        id: Math.random(), 
+        type: type, 
+        r: r, 
+        value: spec.val, 
+        text: spec.txt 
+    };
+    auras.push(newAura);
 
-    // 5. 【最重要】データを保存して、画面表示を最新にする
-    saveData(); // データを保存
-    if (typeof updateUI === 'function') {
-        updateUI(); // 画面のコイン表示等を強制更新
-    }
+    // 6. データを保存して、拠点画面を更新する
+    saveData(); 
+    updateHomeUI(); // このゲームのUI更新関数は updateUI ではなく updateHomeUI です
     
     alert(`【上級霊気】★${r} ${type} を獲得しました！`);
 }
